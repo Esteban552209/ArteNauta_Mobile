@@ -1,63 +1,80 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-import '../core/constants/api_constants.dart';
-import '../models/usuario_model.dart';
 
 class AuthService {
-  // Guardar sesión en el dispositivo
-  static Future<void> guardarSesion(UsuarioModel usuario) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('token', usuario.token);
-    await prefs.setInt('id_usuario', usuario.idUsuario);
-    await prefs.setString('nombre', usuario.nombre);
-    await prefs.setInt('id_rol', usuario.idRol);
-  }
+  final String _supabaseUrl = 'https://oqvuiosndsxjqelefokc.supabase.co';
+  final String _anonKey = 'sb_publishable_3Vc1WhpZiW1x_R8VP1fOsw_C_uSsSIp';
 
-  // Obtener token guardado
-  static Future<String?> obtenerToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('token');
-  }
+//login
+  Future<Map<String, dynamic>> loginConEdgeFunction({
+    required String email,
+    required String clave,
+  }) async {
+    final url = Uri.parse('$_supabaseUrl/functions/v1/login');
 
-  // Obtener id_usuario guardado
-  static Future<int?> obtenerIdUsuario() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt('id_usuario');
-  }
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $_anonKey',
+      },
+      body: jsonEncode({
+        'email': email,
+        'clave': clave,
+      }),
+    );
 
-  // Obtener id_rol guardado
-  static Future<int?> obtenerIdRol() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt('id_rol');
-  }
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
 
-  // Cerrar sesión
-  static Future<void> cerrarSesion() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-  }
-
-  // Login
-  static Future<UsuarioModel?> login(String email, String password) async {
-    try {
-      final res = await http.post(
-        Uri.parse(ApiConstants.login),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email, 'clave': password}),
-      );
-
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        final token = data['token'] ?? '';
-        final usuario = UsuarioModel.fromJson(data['usuario'] ?? data, token);
-        await guardarSesion(usuario);
-        return usuario;
-      }
-      return null;
-    } catch (e) {
-      print('Error en login: $e');
-      return null;
+    if (response.statusCode != 200) {
+      throw Exception(data['error'] ?? 'Error ${response.statusCode}: Bad Request');
     }
+
+    return data;
   }
+
+  
+//Registro
+
+Future<Map<String, dynamic>> registrarUsuario({
+  required String nombre,
+  required String apellido,
+  required String telefono,
+  required String email,
+  required String clave,
+}) async {
+
+  final url = Uri.parse(
+    '$_supabaseUrl/functions/v1/register',
+  );
+
+  final response = await http.post(
+    url,
+
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $_anonKey',
+    },
+
+    body: jsonEncode({
+      'nombre': nombre,
+      'apellido': apellido,
+      'telefono': telefono,
+      'email': email,
+      'clave': clave,
+    }),
+  );
+
+  final data =
+      jsonDecode(response.body) as Map<String, dynamic>;
+
+  if (response.statusCode != 200) {
+    throw Exception(
+      data['error'] ??
+          'Error ${response.statusCode}',
+    );
+  }
+
+  return data;
+}
 }
