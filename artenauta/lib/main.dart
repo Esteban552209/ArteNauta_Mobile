@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
 import 'core/theme/app_theme.dart';
 import 'widgets/gradient_header.dart';
+import 'screens/login_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() {
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: 'https://oqvuiosndsxjqelefokc.supabase.co',
+    anonKey: 'sb_publishable_3Vc1WhpZiW1x_R8VP1fOsw_C_uSsSIp',
+  );
+
   runApp(const ArtenautaApp());
 }
 
@@ -70,20 +80,26 @@ class HomeScreen extends StatelessWidget {
 
                     // Inicio de Sesión / Registro
                     ElevatedButton(
-                      onPressed: () {
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryCyan,
-                        foregroundColor: Colors.white,
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const LoginScreen()),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryCyan,
+                          foregroundColor: Colors.white,
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16, 
+                            vertical: 8,
+                          ),
                         ),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                      ),
-                      child: const Text('Sign In / Registro'),
-                    ),
+                        child: const Text('Sign In / Registro'),
+                      )
                   ],
                 ),
               ),
