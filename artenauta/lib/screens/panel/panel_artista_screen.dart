@@ -98,7 +98,7 @@ class _PanelArtistaScreenState extends State<PanelArtistaScreen> {
                         _scaffoldKey.currentState?.openDrawer();
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white.withOpacity(0.2),
+                        backgroundColor: Colors.white.withValues(alpha: 0.2),
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(

@@ -30,7 +30,6 @@ class AppTheme {
         primary: primaryCyan,
         secondary: lightCyan,
         surface: cardColor,
-        background: backgroundColor,
         onPrimary: Colors.white,
         onSurface: textPrimary,
       ),

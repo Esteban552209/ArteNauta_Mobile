@@ -116,7 +116,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                   child: ListView.separated(
                     padding: const EdgeInsets.all(16),
                     itemCount: _notificaciones.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       final n = _notificaciones[index];
                       return Container(
@@ -124,12 +124,12 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                         decoration: BoxDecoration(
                           color: n.leida
                               ? Colors.white
-                              : AppTheme.primaryCyan.withOpacity(0.05),
+                              : AppTheme.primaryCyan.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: n.leida
                                 ? Colors.grey.shade200
-                                : AppTheme.primaryCyan.withOpacity(0.3),
+                                : AppTheme.primaryCyan.withValues(alpha: 0.3),
                           ),
                         ),
                         child: Row(
@@ -139,7 +139,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
                                 color: _colorPorTipo(n.tipoNotificacion)
-                                    .withOpacity(0.1),
+                                    .withValues(alpha: 0.1),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(

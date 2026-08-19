@@ -132,7 +132,7 @@ class HomeScreen extends StatelessWidget {
                             child: ListTile(
                               contentPadding: const EdgeInsets.all(12),
                               leading: CircleAvatar(
-                                backgroundColor: AppTheme.lightCyan.withOpacity(0.2),
+                                backgroundColor: AppTheme.lightCyan.withValues(alpha: 0.2),
                                 child: const Icon(
                                   Icons.palette_outlined,
                                   color: AppTheme.primaryCyan,
