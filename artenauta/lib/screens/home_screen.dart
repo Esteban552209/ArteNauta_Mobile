@@ -1,150 +1,229 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../widgets/gradient_header.dart';
-import 'profile_screen.dart';
+import '../widgets/notificaciones_panel.dart';
+import '../services/session_service.dart';
+import '../screens/login_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  Map<String, dynamic>? _usuario;
+  bool _menuAbierto = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarUsuario();
+  }
+
+  Future<void> _cargarUsuario() async {
+    final u = await SessionService.getUsuario();
+    setState(() => _usuario = u);
+  }
+
+  Future<void> _cerrarSesion() async {
+    await SessionService.cerrarSesion();
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
+  }
+
+  void _abrirNotificaciones() {
+    setState(() => _menuAbierto = false);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const NotificacionesPanel()),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final nombre = _usuario?['nombre'] ?? 'Usuario';
+
     return Scaffold(
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            // Header con degradado, nombre de app y botón de Perfil
-            GradientHeader(
-              height: 70,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'ARTENAUTA',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.account_circle, color: Colors.white, size: 30),
-                      tooltip: 'Mi Perfil',
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const ProfileScreen(),
+            Column(
+              children: [
+                // HEADER
+                GradientHeader(
+                  height: 100,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Image.asset('assets/LOGO.png',
+                                height: 80, fit: BoxFit.contain),
+                            const SizedBox(width: 8),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Panel Artista',
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14)),
+                                Text('Bienvenido, $nombre',
+                                    style: const TextStyle(
+                                        color: Colors.white70, fontSize: 12)),
+                              ],
+                            ),
+                          ],
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            setState(() => _menuAbierto = !_menuAbierto);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _menuAbierto
+                                ? Colors.white
+                                : AppTheme.primaryCyan,
+                            foregroundColor: _menuAbierto
+                                ? AppTheme.primaryCyan
+                                : Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
                           ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Contenido Principal (Feed de publicaciones o proyectos)
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(16.0),
-                children: [
-                  const Text(
-                    'Explora Galería',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryCyan,
+                          child: const Text('Menú'),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                ),
 
-                  // Tarjeta de ejemplo para la galería de arte
-                  _buildArtCard(
-                    title: 'Obras Recientes',
-                    author: 'Comunidad de Artistas',
-                    description: 'Descubre las publicaciones más destacadas del día.',
-                    icon: Icons.palette_outlined,
+                // CONTENIDO
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Bienvenido, $nombre',
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primaryCyan,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Tu espacio creativo en ArteNauta',
+                          style: TextStyle(color: AppTheme.textSecondary),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 16),
+                ),
 
-                  _buildArtCard(
-                    title: 'Categorías Populares',
-                    author: 'Ilustración, Modelado 3D, Arte Digital',
-                    description: 'Filtra el contenido según tus intereses creativos.',
-                    icon: Icons.category_outlined,
+                // FOOTER
+                GradientHeader(
+                  height: 50,
+                  child: const Center(
+                    child: Text('©2026 ArteNauta',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13)),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
 
-            // Footer con marca de agua
-            const GradientHeader(
-              height: 35,
-              child: Center(
-                child: Text(
-                  '©2026 ArteNauta',
-                  style: TextStyle(color: Colors.white, fontSize: 12),
+            // MENÚ DESPLEGABLE
+            if (_menuAbierto)
+              Positioned(
+                top: 100,
+                right: 16,
+                child: Material(
+                  elevation: 8,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    width: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _itemMenu(
+                          icon: Icons.add_circle_outline,
+                          label: 'Nueva Publicación',
+                          color: AppTheme.primaryCyan,
+                          onTap: () {
+                            setState(() => _menuAbierto = false);
+                            // navegar a nueva publicación
+                          },
+                        ),
+                        const Divider(height: 1),
+                        _itemMenu(
+                          icon: Icons.person_outline,
+                          label: 'Mi Perfil',
+                          color: AppTheme.primaryCyan,
+                          onTap: () {
+                            setState(() => _menuAbierto = false);
+                            // navegar a perfil
+                          },
+                        ),
+                        const Divider(height: 1),
+                        _itemMenu(
+                          icon: Icons.notifications_outlined,
+                          label: 'Notificaciones',
+                          color: AppTheme.primaryCyan,
+                          onTap: _abrirNotificaciones,
+                        ),
+                        const Divider(height: 1),
+                        _itemMenu(
+                          icon: Icons.logout,
+                          label: 'Cerrar Sesión',
+                          color: Colors.red,
+                          onTap: _cerrarSesion,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),
     );
   }
 
-  // Helper para construir tarjetas con el estilo visual consistente
-  Widget _buildArtCard({
-    required String title,
-    required String author,
-    required String description,
+  Widget _itemMenu({
     required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
   }) {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 26,
-              backgroundColor: AppTheme.primaryCyan.withOpacity(0.15),
-              child: Icon(icon, color: AppTheme.primaryCyan, size: 28),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    author,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    description,
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                ],
-              ),
-            ),
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 12),
+            Text(label,
+                style: TextStyle(
+                    color: color == Colors.red ? Colors.red : Colors.black87,
+                    fontWeight: FontWeight.w500)),
           ],
         ),
       ),
