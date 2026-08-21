@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../services/auth_service.dart';
 import '../widgets/gradient_header.dart';
-import 'home_screen.dart';
 import 'register_screen.dart';
+
+import 'admin/admin_users_screen.dart';
+import 'artista_screen.dart';
+import 'usuario_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -39,19 +42,33 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      await _authService.loginConEdgeFunction(
+      final int idRol = await _authService.loginConEdgeFunction(
         email: email,
         clave: clave,
       );
 
       if (!mounted) return;
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const HomeScreen(),
-        ),
-      );
+      // Hacemos la redirección dependiendo del rol
+      switch (idRol) {
+        case 1:
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminUsersScreen()),
+          );
+          break;
+        case 2:
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const TestArtistaScreen()),
+          );
+          break;
+        default:
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const TestUsuarioScreen()),
+          );
+      }
     } catch (e) {
       if (!mounted) return;
 
@@ -86,11 +103,9 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Column(
           children: [
-
             // =========================
             // HEADER
             // =========================
-
             const GradientHeader(
               height: 120,
               child: Center(
@@ -109,7 +124,6 @@ class _LoginScreenState extends State<LoginScreen> {
             // =========================
             // FORMULARIO
             // =========================
-
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(
@@ -127,7 +141,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-
                         const Text(
                           'Iniciar Sesión',
                           textAlign: TextAlign.center,
@@ -137,9 +150,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             color: AppTheme.primaryCyan,
                           ),
                         ),
-
                         const SizedBox(height: 8),
-
                         const Text(
                           'Ingresa a tu cuenta para continuar',
                           textAlign: TextAlign.center,
@@ -148,20 +159,16 @@ class _LoginScreenState extends State<LoginScreen> {
                             fontSize: 14,
                           ),
                         ),
-
                         const SizedBox(height: 28),
 
                         // EMAIL
-
                         const Text(
                           'Correo electrónico',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-
                         const SizedBox(height: 8),
-
                         TextField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
@@ -175,20 +182,16 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 18),
 
                         // CONTRASEÑA
-
                         const Text(
                           'Contraseña',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-
                         const SizedBox(height: 8),
-
                         TextField(
                           controller: _claveController,
                           obscureText: !_mostrarClave,
@@ -214,32 +217,26 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 28),
 
                         // BOTÓN LOGIN
-
                         SizedBox(
                           height: 52,
                           child: ElevatedButton(
-                            onPressed:
-                                _isLoading ? null : _handleLogin,
+                            onPressed: _isLoading ? null : _handleLogin,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  AppTheme.primaryCyan,
+                              backgroundColor: AppTheme.primaryCyan,
                               foregroundColor: Colors.white,
                               elevation: 2,
                               shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(10),
                               ),
                             ),
                             child: _isLoading
                                 ? const SizedBox(
                                     height: 22,
                                     width: 22,
-                                    child:
-                                        CircularProgressIndicator(
+                                    child: CircularProgressIndicator(
                                       color: Colors.white,
                                       strokeWidth: 2,
                                     ),
@@ -248,20 +245,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                     'Ingresar',
                                     style: TextStyle(
                                       fontSize: 16,
-                                      fontWeight:
-                                          FontWeight.bold,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
                           ),
                         ),
-
                         const SizedBox(height: 22),
 
                         // REGISTRO
-
                         Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             const Text(
                               '¿No tienes una cuenta? ',
@@ -269,24 +262,20 @@ class _LoginScreenState extends State<LoginScreen> {
                                 color: Colors.grey,
                               ),
                             ),
-
                             GestureDetector(
                               onTap: () {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) =>
-                                        const RegisterScreen(),
+                                    builder: (context) => const RegisterScreen(),
                                   ),
                                 );
                               },
                               child: const Text(
                                 'Regístrate',
                                 style: TextStyle(
-                                  color:
-                                      AppTheme.primaryCyan,
-                                  fontWeight:
-                                      FontWeight.bold,
+                                  color: AppTheme.primaryCyan,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
@@ -302,7 +291,6 @@ class _LoginScreenState extends State<LoginScreen> {
             // =========================
             // FOOTER
             // =========================
-
             const GradientHeader(
               height: 70,
               child: Center(

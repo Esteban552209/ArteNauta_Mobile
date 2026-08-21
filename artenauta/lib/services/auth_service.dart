@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart'; 
+import 'package:flutter/foundation.dart';
 
 class AuthService {
-  final String _supabaseUrl = 'https://oqvuiosndsxjqelefokc.supabase.co';
-  final String _anonKey = 'sb_publishable_3Vc1WhpZiW1x_R8VP1fOsw_C_uSsSIp';
+  final String _supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
+  final String _anonKey = dotenv.env['SUPABASE_PUBLISHABLE_KEY'] ?? '';
 
-//login
-  Future<Map<String, dynamic>> loginConEdgeFunction({
+  Future<int> loginConEdgeFunction({
     required String email,
     required String clave,
   }) async {
@@ -16,65 +17,58 @@ class AuthService {
       url,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer $_anonKey',
+        'Authorization': 'Bearer $_anonKey', 
       },
       body: jsonEncode({
         'email': email,
-        'clave': clave,
+        'password': clave, 
       }),
     );
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
 
     if (response.statusCode != 200) {
-      throw Exception(data['error'] ?? 'Error ${response.statusCode}: Bad Request');
+      throw Exception(data['mensaje'] ?? data['error'] ?? 'Error de autenticación');
+    }
+
+    final String token = data['token'];
+    debugPrint('Token recibido exitosamente: $token'); // <-- Agrega esta línea
+    final int idRol = data['usuario']['id_rol'];
+
+
+    return idRol;
+  }
+
+  Future<Map<String, dynamic>> registrarUsuario({
+    required String nombre,
+    required String apellido,
+    required String telefono,
+    required String email,
+    required String clave,
+  }) async {
+    final url = Uri.parse('$_supabaseUrl/functions/v1/register'); 
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $_anonKey',
+      },
+      body: jsonEncode({
+        'nombre': nombre,
+        'apellido': apellido,
+        'telefono': telefono,
+        'email': email,
+        'clave': clave, 
+      }),
+    );
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (response.statusCode != 201 && response.statusCode != 200) {
+      throw Exception(data['error'] ?? data['mensaje'] ?? 'Error al registrar');
     }
 
     return data;
   }
-
-  
-//Registro
-
-Future<Map<String, dynamic>> registrarUsuario({
-  required String nombre,
-  required String apellido,
-  required String telefono,
-  required String email,
-  required String clave,
-}) async {
-
-  final url = Uri.parse(
-    '$_supabaseUrl/functions/v1/register',
-  );
-
-  final response = await http.post(
-    url,
-
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $_anonKey',
-    },
-
-    body: jsonEncode({
-      'nombre': nombre,
-      'apellido': apellido,
-      'telefono': telefono,
-      'email': email,
-      'clave': clave,
-    }),
-  );
-
-  final data =
-      jsonDecode(response.body) as Map<String, dynamic>;
-
-  if (response.statusCode != 200) {
-    throw Exception(
-      data['error'] ??
-          'Error ${response.statusCode}',
-    );
-  }
-
-  return data;
-}
 }
