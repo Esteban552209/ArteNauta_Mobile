@@ -5,6 +5,7 @@ import '../widgets/notificaciones_panel.dart';
 import '../services/session_service.dart';
 import '../screens/login_screen.dart';
 import '../screens/perfil_screen.dart';
+import '../screens/conversaciones_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -172,6 +173,20 @@ class _HomeScreenState extends State<HomeScreen> {
                             // navegar a nueva publicación
                           },
                         ),
+                        const Divider(height: 1),
+
+                        _itemMenu(
+                          icon: Icons.chat_bubble_outline,
+                          label: 'Conversaciones',
+                          color: AppTheme.primaryCyan,
+                          onTap: () {
+                            setState(() => _menuAbierto = false);
+                            Navigator.push(
+                            context,
+                          MaterialPageRoute(builder: (_) => const ConversacionesScreen()),
+                          );
+                          },
+                          ),
                         const Divider(height: 1),
                         
                         // INTEGRACIÓN DE MI PERFIL AQUÍ
