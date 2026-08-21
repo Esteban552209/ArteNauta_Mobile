@@ -1,3 +1,4 @@
+import 'package:artenauta/services/session_service.dart';
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../services/auth_service.dart';
@@ -34,41 +35,41 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      await _authService.loginConEdgeFunction(
+      final data = await _authService.loginConEdgeFunction(
         email: email,
         clave: clave,
       );
+
+      // ── Guardar sesión ──────────────────────────────
+      final token = data['token'] as String? ?? '';
+      final usuario = data['usuario'] as Map<String, dynamic>? ?? {};
+
+      await SessionService.guardar(
+        token: token,
+        usuario: usuario,
+      );
+      // ───────────────────────────────────────────────
 
       if (!mounted) return;
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (context) => const HomeScreen(),
-        ),
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
+
     } catch (e) {
       if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            e.toString().replaceAll('Exception: ', ''),
-          ),
+          content: Text(e.toString().replaceAll('Exception: ', '')),
           backgroundColor: Colors.red,
         ),
       );
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
