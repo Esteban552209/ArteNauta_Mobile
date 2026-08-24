@@ -13,7 +13,7 @@ class AppHeader extends StatelessWidget {
     required this.idRol,
     required this.nombre,
     required this.menuAbierto,
-    required this.onMenuTap,
+    required this.onMenuTap, required int notifCount,
   });
 
   String get _tituloPanel {

@@ -31,6 +31,9 @@ class _NotificacionesPanelState extends State<NotificacionesPanel> {
         ? await NotificacionesService.getSolicitudes()
         : <Map<String, dynamic>>[];
 
+    // Marca como vistas al abrir el panel
+    await NotificacionesService.marcarComoVistas();
+
     setState(() {
       _notificaciones = notifs;
       _solicitudes = sols;

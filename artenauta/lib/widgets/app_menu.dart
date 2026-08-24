@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
+import '../services/notificaciones_service.dart';
 
 class AppMenu extends StatelessWidget {
   final int idRol;
+  final int notifCount; // ← nuevo
   final VoidCallback? onNuevaPublicacion;
   final VoidCallback? onMiPerfil;
   final VoidCallback? onConversaciones;
@@ -12,6 +14,7 @@ class AppMenu extends StatelessWidget {
   const AppMenu({
     super.key,
     required this.idRol,
+    this.notifCount = 0, // ← default 0
     this.onNuevaPublicacion,
     this.onMiPerfil,
     this.onConversaciones,
@@ -33,7 +36,6 @@ class AppMenu extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Nueva publicación — solo artista (idRol == 2)
             if (idRol == 2) ...[
               _Item(
                 icon: Icons.add_circle_outline,
@@ -43,7 +45,6 @@ class AppMenu extends StatelessWidget {
               ),
               const Divider(height: 1),
             ],
-
             _Item(
               icon: Icons.person_outline,
               label: 'Mi Perfil',
@@ -51,7 +52,6 @@ class AppMenu extends StatelessWidget {
               onTap: onMiPerfil ?? () {},
             ),
             const Divider(height: 1),
-
             _Item(
               icon: Icons.chat_bubble_outline,
               label: 'Conversaciones',
@@ -60,14 +60,63 @@ class AppMenu extends StatelessWidget {
             ),
             const Divider(height: 1),
 
-            _Item(
-              icon: Icons.notifications_outlined,
-              label: 'Notificaciones',
-              color: AppTheme.primaryCyan,
+            // ── Notificaciones con badge ──────────────
+            InkWell(
               onTap: onNotificaciones ?? () {},
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 13),
+                child: Row(
+                  children: [
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Icon(Icons.notifications_outlined,
+                            color: AppTheme.primaryCyan, size: 20),
+                        if (notifCount > 0)
+                          Positioned(
+                            top: -6,
+                            right: -6,
+                            child: Container(
+                              padding: const EdgeInsets.all(3),
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 16,
+                                minHeight: 16,
+                              ),
+                              child: Text(
+                                notifCount > 9 ? '9+' : '$notifCount',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Notificaciones',
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            const Divider(height: 1),
+            // ─────────────────────────────────────────
 
+            const Divider(height: 1),
             _Item(
               icon: Icons.logout,
               label: 'Cerrar Sesión',

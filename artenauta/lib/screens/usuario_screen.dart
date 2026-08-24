@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../services/session_service.dart';
 import '../services/publicaciones_service.dart';
+import '../services/notificaciones_service.dart';
 import '../widgets/app_header.dart';
 import '../widgets/app_menu.dart';
 import '../widgets/gradient_header.dart';
@@ -21,6 +22,7 @@ class _TestUsuarioScreenState extends State<TestUsuarioScreen> {
   
   Map<String, dynamic>? _usuario;
   bool _menuAbierto = false;
+  int _notifCount = 0;
 
   @override
   void initState() {
@@ -28,9 +30,26 @@ class _TestUsuarioScreenState extends State<TestUsuarioScreen> {
     _cargar();
   }
 
+  // 1. Conteo optimizado usando contarNuevas()
   Future<void> _cargar() async {
     final u = await SessionService.getUsuario();
-    setState(() => _usuario = u);
+    final count = await NotificacionesService.contarNuevas();
+    
+    setState(() {
+      _usuario = u;
+      _notifCount = count;
+    });
+  }
+
+  // 2. Nuevo método para abrir notificaciones y actualizar el contador al volver
+  Future<void> _abrirNotificaciones() async {
+    _cerrarMenu();
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const NotificacionesPanel()),
+    );
+    final count = await NotificacionesService.contarNuevas();
+    setState(() => _notifCount = count);
   }
 
   Future<void> _cerrarSesion() async {
@@ -61,6 +80,7 @@ class _TestUsuarioScreenState extends State<TestUsuarioScreen> {
                 idRol: idRol,
                 nombre: nombre,
                 menuAbierto: _menuAbierto,
+                notifCount: _notifCount,
                 onMenuTap: () => setState(() => _menuAbierto = !_menuAbierto),
               ),
 
@@ -95,7 +115,6 @@ class _TestUsuarioScreenState extends State<TestUsuarioScreen> {
                         ),
                         Expanded(
                           child: FutureBuilder<List<Map<String, dynamic>>>(
-                            // Llamamos a la API directamente a través del servicio
                             future: _publicacionesService.obtenerPublicaciones(),
                             builder: (context, snapshot) {
                               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -148,6 +167,7 @@ class _TestUsuarioScreenState extends State<TestUsuarioScreen> {
                         right: 16,
                         child: AppMenu(
                           idRol: idRol,
+                          notifCount: _notifCount,
                           onMiPerfil: () {
                             _cerrarMenu();
                             Navigator.push(
@@ -158,13 +178,7 @@ class _TestUsuarioScreenState extends State<TestUsuarioScreen> {
                           onConversaciones: () {
                             _cerrarMenu();
                           },
-                          onNotificaciones: () {
-                            _cerrarMenu();
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => const NotificacionesPanel()),
-                            );
-                          },
+                          onNotificaciones: _abrirNotificaciones, // Vinculado aquí
                           onCerrarSesion: _cerrarSesion,
                         ),
                       ),
