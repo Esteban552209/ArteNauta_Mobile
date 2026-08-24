@@ -58,7 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
         backgroundColor:
-            Colors.orange, // Color llamativo para recordar borrarlo luego
+            Colors.orange,
         icon: const Icon(Icons.admin_panel_settings, color: Colors.white),
         label: const Text(
           'Test Admin',

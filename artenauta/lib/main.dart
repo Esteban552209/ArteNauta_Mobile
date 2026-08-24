@@ -33,7 +33,6 @@ class ArtenautaApp extends StatelessWidget {
   }
 }
 
-// Verifica si hay sesión activa al abrir la app
 class SplashRouter extends StatefulWidget {
   const SplashRouter({super.key});
 

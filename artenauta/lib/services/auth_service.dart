@@ -32,7 +32,7 @@ class AuthService {
     }
 
     final String token = data['token'];
-    debugPrint('Token recibido exitosamente: $token'); // <-- Agrega esta línea
+    debugPrint('Token recibido exitosamente: $token'); 
     final int idRol = data['usuario']['id_rol'];
 
 

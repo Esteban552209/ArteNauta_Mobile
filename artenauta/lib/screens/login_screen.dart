@@ -49,9 +49,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
 
-      // Hacemos la redirección dependiendo del rol
       switch (idRol) {
-        case 1:
+        case 3:
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const AdminUsersScreen()),
@@ -103,9 +102,6 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // =========================
-            // HEADER
-            // =========================
             const GradientHeader(
               height: 120,
               child: Center(
@@ -120,10 +116,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
-
-            // =========================
-            // FORMULARIO
-            // =========================
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(
@@ -161,7 +153,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 28),
 
-                        // EMAIL
                         const Text(
                           'Correo electrónico',
                           style: TextStyle(
@@ -184,7 +175,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 18),
 
-                        // CONTRASEÑA
                         const Text(
                           'Contraseña',
                           style: TextStyle(
@@ -287,10 +277,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
-
-            // =========================
-            // FOOTER
-            // =========================
             const GradientHeader(
               height: 70,
               child: Center(
