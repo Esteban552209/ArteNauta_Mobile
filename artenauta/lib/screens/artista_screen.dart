@@ -51,7 +51,6 @@ class _TestArtistaScreenState extends State<TestArtistaScreen> {
         onTap: () { if (_menuAbierto) _cerrarMenu(); },
         child: Column(
           children: [
-            // HEADER reutilizable
             AppHeader(
               idRol: idRol,
               nombre: nombre,
@@ -59,11 +58,9 @@ class _TestArtistaScreenState extends State<TestArtistaScreen> {
               onMenuTap: () => setState(() => _menuAbierto = !_menuAbierto),
             ),
 
-            // CONTENIDO
             Expanded(
               child: Stack(
                 children: [
-                  // Muro de publicaciones — tu compañero lo integrará aquí
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
@@ -95,7 +92,6 @@ class _TestArtistaScreenState extends State<TestArtistaScreen> {
                         idRol: idRol,
                         onNuevaPublicacion: () {
                           _cerrarMenu();
-                          // tu compañero conecta aquí
                         },
                         onMiPerfil: () {
                           _cerrarMenu();

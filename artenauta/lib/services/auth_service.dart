@@ -1,8 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter/foundation.dart';
-import 'session_service.dart'; // ← agregar este import
+import 'session_service.dart';
 
 class AuthService {
   final String _supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
@@ -36,19 +35,15 @@ class AuthService {
     final Map<String, dynamic> usuario = data['usuario'];
     final int idRol = usuario['id_rol'];
 
-    debugPrint('Token recibido exitosamente: $token');
-
-    // ── Guardar sesión ──────────────────────────
-    await SessionService.guardar(
+  await SessionService.guardar(
       token: token,
-      usuario: usuario,
+      usuario: data['usuario'],
     );
-    // ────────────────────────────────────────────
+
 
     return idRol;
   }
 
-  // registrarUsuario queda exactamente igual
   Future<Map<String, dynamic>> registrarUsuario({
     required String nombre,
     required String apellido,

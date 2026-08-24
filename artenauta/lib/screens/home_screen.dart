@@ -133,7 +133,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
-                // CONTENIDO
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
