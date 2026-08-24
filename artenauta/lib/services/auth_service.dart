@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart'; 
 import 'package:flutter/foundation.dart';
+import 'session_service.dart';
 
 class AuthService {
   final String _supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
@@ -35,6 +36,10 @@ class AuthService {
     debugPrint('Token recibido exitosamente: $token'); 
     final int idRol = data['usuario']['id_rol'];
 
+  await SessionService.guardar(
+      token: token,
+      usuario: data['usuario'],
+    );
 
     return idRol;
   }
