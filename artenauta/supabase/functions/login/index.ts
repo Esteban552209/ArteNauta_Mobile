@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import bcrypt from "npm:bcryptjs"
+import jwt from "npm:jsonwebtoken"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,135 +9,70 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-
-  // CORS
   if (req.method === 'OPTIONS') {
-    return new Response('ok', {
-      headers: corsHeaders
-    })
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-
-    // Leer información enviada desde Flutter
     const body = await req.json()
+    const { email, password } = body;
 
-    if (!body?.email || !body?.clave) {
-      return new Response(
-        JSON.stringify({
-          error: 'Email y contraseña son requeridos.'
-        }),
-        {
-          status: 400,
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json'
-          }
-        }
-      )
-    }
-
-    // Variables de entorno de Supabase
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-    const supabaseServiceRoleKey =
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Cliente de Supabase con permisos administrativos
-    const supabase = createClient(
-      supabaseUrl,
-      supabaseServiceRoleKey
-    )
+    const { data: usuarioEncontrado, error } = await supabase
+      .from("usuarios")
+      .select("*")
+      .eq("email", email)
+      .maybeSingle();
 
-    // Buscar usuario en nuestra tabla "usuarios"
-    const { data, error } = await supabase
-      .from('usuarios')
-      .select('*')
-      .eq('email', body.email)
-      .maybeSingle()
+    if (error) throw error;
 
-    // Error de consulta
-    if (error) {
-
-      console.error('Error consultando usuario:', error)
-
-      return new Response(
-        JSON.stringify({
-          error: 'Error consultando el usuario.'
-        }),
-        {
-          status: 500,
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json'
-          }
-        }
-      )
+    if (!usuarioEncontrado) {
+      return new Response(JSON.stringify({ mensaje: "Correo o contraseña incorrectos" }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Usuario no encontrado
-    if (!data) {
+    const passwordValida = await bcrypt.compare(password, usuarioEncontrado.clave);
 
-      return new Response(
-        JSON.stringify({
-          error: 'Credenciales incorrectas.'
-        }),
-        {
-          status: 401,
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json'
-          }
-        }
-      )
+    if (!passwordValida) {
+      return new Response(JSON.stringify({ mensaje: "Correo o contraseña incorrectos" }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Comprobar contraseña
-    if (data.clave !== body.clave) {
-
+    if (usuarioEncontrado.estado_cuenta === false) {
       return new Response(
-        JSON.stringify({
-          error: 'Credenciales incorrectas.'
-        }),
-        {
-          status: 401,
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json'
-          }
-        }
-      )
+        JSON.stringify({ mensaje: "Tu cuenta ha sido desactivada por un administrador. No puedes iniciar sesión." }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Login exitoso
-    return new Response(
-      JSON.stringify({
-        message: 'Autenticación exitosa',
-        user: data
-      }),
-      {
-        status: 200,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        }
-      }
-    )
+    const payload = {
+      id_usuario: usuarioEncontrado.id_usuario,
+      id_rol: usuarioEncontrado.id_rol
+    };
 
-  } catch (err) {
-
-    console.error('Error interno:', err)
+    const secretKey = Deno.env.get('JWT_SECRET') || "mi_clave_super_secreta_desarrollo";
+    const token = jwt.sign(payload, secretKey, { expiresIn: "5h" });
 
     return new Response(
       JSON.stringify({
-        error: 'Error interno en la Edge Function'
-      }),
-      {
-        status: 500,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json'
+        mensaje: "Inicio de sesión exitoso",
+        token: token,
+        usuario: {
+          id_usuario: usuarioEncontrado.id_usuario,
+          nombre: usuarioEncontrado.nombre,
+          email: usuarioEncontrado.email,
+          id_rol: usuarioEncontrado.id_rol
         }
-      }
-    )
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error: any) {
+    console.error("Error en el login:", error);
+    return new Response(
+      JSON.stringify({ mensaje: "Error interno del servidor", detalle: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 })

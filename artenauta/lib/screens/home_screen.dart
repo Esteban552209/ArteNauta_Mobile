@@ -5,6 +5,7 @@ import '../widgets/notificaciones_panel.dart';
 import '../services/session_service.dart';
 import '../screens/login_screen.dart';
 import '../screens/perfil_screen.dart';
+import 'admin/admin_users_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -51,6 +52,21 @@ class _HomeScreenState extends State<HomeScreen> {
     final nombre = _usuario?['nombre'] ?? 'Usuario';
 
     return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminUsersScreen()),
+          );
+        },
+        backgroundColor:
+            Colors.orange,
+        icon: const Icon(Icons.admin_panel_settings, color: Colors.white),
+        label: const Text(
+          'Test Admin',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+      ),
       body: SafeArea(
         child: Stack(
           children: [
@@ -66,21 +82,31 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Row(
                           children: [
-                            Image.asset('assets/LOGO.png',
-                                height: 80, fit: BoxFit.contain),
+                            Image.asset(
+                              'assets/LOGO.png',
+                              height: 80,
+                              fit: BoxFit.contain,
+                            ),
                             const SizedBox(width: 8),
                             Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Panel Artista',
-                                    style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14)),
-                                Text('Bienvenido, $nombre',
-                                    style: const TextStyle(
-                                        color: Colors.white70, fontSize: 12)),
+                                const Text(
+                                  'Panel Artista',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                Text(
+                                  'Bienvenido, $nombre',
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                  ),
+                                ),
                               ],
                             ),
                           ],
@@ -136,11 +162,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 GradientHeader(
                   height: 50,
                   child: const Center(
-                    child: Text('©2026 ArteNauta',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13)),
+                    child: Text(
+                      '©2026 ArteNauta',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -230,10 +259,13 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Icon(icon, color: color, size: 20),
             const SizedBox(width: 12),
-            Text(label,
-                style: TextStyle(
-                    color: color == Colors.red ? Colors.red : Colors.black87,
-                    fontWeight: FontWeight.w500)),
+            Text(
+              label,
+              style: TextStyle(
+                color: color == Colors.red ? Colors.red : Colors.black87,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
       ),

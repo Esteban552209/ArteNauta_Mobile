@@ -1,169 +1,57 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import bcrypt from "npm:bcryptjs"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
 serve(async (req) => {
-
   if (req.method === 'OPTIONS') {
-    return new Response('ok', {
-      headers: corsHeaders
-    })
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-
     const body = await req.json()
+    const { nombre, apellido, telefono, email, clave, id_rol } = body;
 
-    if (
-      !body?.nombre ||
-      !body?.telefono ||
-      !body?.email ||
-      !body?.clave
-    ) {
-      return new Response(
-        JSON.stringify({
-          error: 'Todos los campos son requeridos.'
-        }),
-        {
-          status: 400,
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json'
-          }
-        }
-      )
+    if (!email || !clave) {
+      return new Response(JSON.stringify({ error: 'Email y clave son obligatorios' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }})
     }
 
-    const supabaseUrl =
-      Deno.env.get('SUPABASE_URL') ?? ''
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(clave, saltRounds);
 
-    const supabaseServiceRoleKey =
-      Deno.env.get(
-        'SUPABASE_SERVICE_ROLE_KEY'
-      ) ?? ''
-
-    const supabase = createClient(
-      supabaseUrl,
-      supabaseServiceRoleKey
-    )
-
-    const { data: usuarioExistente, error: errorBusqueda } =
-      await supabase
-        .from('usuarios')
-        .select('email')
-        .eq('email', body.email)
-        .maybeSingle()
-
-    if (errorBusqueda) {
-
-      console.error(
-        'Error buscando usuario:',
-        errorBusqueda
-      )
-
-      return new Response(
-        JSON.stringify({
-          error: 'Error consultando la base de datos.'
-        }),
-        {
-          status: 500,
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json'
-          }
-        }
-      )
-    }
-
-    if (usuarioExistente) {
-
-      return new Response(
-        JSON.stringify({
-          error:
-            'Ya existe una cuenta registrada con este correo.'
-        }),
-        {
-          status: 409,
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json'
-          }
-        }
-      )
-    }
-  // INSERTAR USUARIO
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     const { data, error } = await supabase
       .from('usuarios')
-      .insert({
-        nombre: body.nombre,
-        apellido: body.apellido,
-        telefono: body.telefono,
-        email: body.email,
-        clave: body.clave,
-      })
-      .select()
-      .single()
-
-    if (error) {
-
-      console.error(
-        'Error insertando usuario:',
-        error
-      )
-
-      return new Response(
-        JSON.stringify({
-          error: 'No fue posible registrar el usuario.'
-        }),
+      .insert([
         {
-          status: 500,
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json'
-          }
+          nombre: nombre,
+          apellido: apellido,
+          telefono: telefono,
+          email: email,
+          clave: hashedPassword,
+          id_rol: id_rol
         }
-      )
-    }
+      ]);
+
+    if (error) throw error;
 
     return new Response(
-      JSON.stringify({
-        message: 'Usuario registrado correctamente.',
-        user: data
-      }),
-      {
-        status: 200,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        }
-      }
+      JSON.stringify({ mensaje: 'Usuario registrado exitosamente' }),
+      { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
-  } catch (error) {
-
-    console.error(
-      'Error interno:',
-      error
-    )
-
+  } catch (error: any) {
+    console.error("Error en el registro:", error);
     return new Response(
-      JSON.stringify({
-        error:
-          'Error interno en la Edge Function.'
-      }),
-      {
-        status: 500,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        }
-      }
+      JSON.stringify({ error: error.message || 'Hubo un error al registrar el usuario' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })

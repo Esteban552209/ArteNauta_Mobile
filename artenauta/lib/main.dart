@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/theme/app_theme.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
@@ -8,9 +9,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await dotenv.load(fileName: ".env");
+
   await Supabase.initialize(
-    url: 'https://oqvuiosndsxjqelefokc.supabase.co',
-    anonKey: 'sb_publishable_3Vc1WhpZiW1x_R8VP1fOsw_C_uSsSIp',
+    url: dotenv.env['SUPABASE_URL']!,
+    publishableKey: dotenv.env['SUPABASE_PUBLISHABLE_KEY']!,
   );
 
   runApp(const ArtenautaApp());
@@ -30,7 +33,6 @@ class ArtenautaApp extends StatelessWidget {
   }
 }
 
-// Verifica si hay sesión activa al abrir la app
 class SplashRouter extends StatefulWidget {
   const SplashRouter({super.key});
 
