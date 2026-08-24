@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart'; 
-import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'session_service.dart';
 
 class AuthService {
@@ -18,11 +17,11 @@ class AuthService {
       url,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer $_anonKey', 
+        'Authorization': 'Bearer $_anonKey',
       },
       body: jsonEncode({
         'email': email,
-        'password': clave, 
+        'password': clave,
       }),
     );
 
@@ -33,13 +32,14 @@ class AuthService {
     }
 
     final String token = data['token'];
-    debugPrint('Token recibido exitosamente: $token'); 
-    final int idRol = data['usuario']['id_rol'];
+    final Map<String, dynamic> usuario = data['usuario'];
+    final int idRol = usuario['id_rol'];
 
   await SessionService.guardar(
       token: token,
       usuario: data['usuario'],
     );
+
 
     return idRol;
   }
@@ -51,7 +51,7 @@ class AuthService {
     required String email,
     required String clave,
   }) async {
-    final url = Uri.parse('$_supabaseUrl/functions/v1/register'); 
+    final url = Uri.parse('$_supabaseUrl/functions/v1/register');
 
     final response = await http.post(
       url,
@@ -64,7 +64,7 @@ class AuthService {
         'apellido': apellido,
         'telefono': telefono,
         'email': email,
-        'clave': clave, 
+        'clave': clave,
       }),
     );
 

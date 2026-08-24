@@ -4,6 +4,7 @@ import '../widgets/gradient_header.dart';
 import '../widgets/notificaciones_panel.dart';
 import '../services/session_service.dart';
 import '../screens/login_screen.dart';
+import '../screens/perfil_screen.dart';
 import 'admin/admin_users_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -25,6 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _cargarUsuario() async {
     final u = await SessionService.getUsuario();
+    print('Usuario guardado: $u');
     setState(() => _usuario = u);
   }
 
@@ -131,7 +133,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
-                // CONTENIDO
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -200,15 +201,23 @@ class _HomeScreenState extends State<HomeScreen> {
                           },
                         ),
                         const Divider(height: 1),
+                        
+                        // INTEGRACIÓN DE MI PERFIL AQUÍ
                         _itemMenu(
                           icon: Icons.person_outline,
                           label: 'Mi Perfil',
                           color: AppTheme.primaryCyan,
                           onTap: () {
                             setState(() => _menuAbierto = false);
-                            // navegar a perfil
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const PerfilScreen(),
+                              ),
+                            );
                           },
                         ),
+                        
                         const Divider(height: 1),
                         _itemMenu(
                           icon: Icons.notifications_outlined,
