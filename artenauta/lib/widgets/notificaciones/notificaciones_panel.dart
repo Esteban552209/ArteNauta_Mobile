@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../core/theme/app_theme.dart';
-import '../services/notificaciones_service.dart';
-import '../services/session_service.dart';
+import '../../core/theme/app_theme.dart';
+import '../../services/notificaciones_service.dart';
+import '../../services/session_service.dart';
 
 class NotificacionesPanel extends StatefulWidget {
   const NotificacionesPanel({super.key});

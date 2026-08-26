@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../widgets/gradient_header.dart';
-import '../widgets/notificaciones_panel.dart';
+import '../widgets/notificaciones/notificaciones_panel.dart';
 import '../services/session_service.dart';
 import '../screens/login_screen.dart';
 import '../screens/perfil_screen.dart';
