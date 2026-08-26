@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
+import 'package:art_sweetalert_new/art_sweetalert_new.dart';
 
 class AppMenu extends StatelessWidget {
   final int idRol;
@@ -33,7 +34,7 @@ class AppMenu extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Nueva publicación — solo artista (idRol == 2)
+
             if (idRol == 2) ...[
               _Item(
                 icon: Icons.add_circle_outline,
@@ -50,6 +51,7 @@ class AppMenu extends StatelessWidget {
               color: AppTheme.primaryCyan,
               onTap: onMiPerfil ?? () {},
             ),
+
             const Divider(height: 1),
 
             _Item(
@@ -58,6 +60,7 @@ class AppMenu extends StatelessWidget {
               color: AppTheme.primaryCyan,
               onTap: onConversaciones ?? () {},
             ),
+
             const Divider(height: 1),
 
             _Item(
@@ -66,13 +69,60 @@ class AppMenu extends StatelessWidget {
               color: AppTheme.primaryCyan,
               onTap: onNotificaciones ?? () {},
             ),
+
             const Divider(height: 1),
 
             _Item(
               icon: Icons.logout,
               label: 'Cerrar Sesión',
               color: Colors.red,
-              onTap: onCerrarSesion ?? () {},
+
+              onTap: () {
+
+                ArtSweetAlert.show(
+                  context: context,
+                  type: ArtAlertType.warning,
+
+                  title: const Text(
+                    '¿Cerrar sesión?',
+                  ),
+
+                  content: const Text(
+                    '¿Estás seguro de que deseas cerrar tu sesión?',
+                  ),
+
+                  actions: [
+
+                    // CANCELAR
+                    ArtAlertButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+
+                      child: const Text(
+                        'Cancelar',
+                      ),
+
+                      backgroundColor: Colors.grey,
+                      textColor: Colors.white,
+                    ),
+
+                    ArtAlertButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        if (onCerrarSesion != null) {
+                          onCerrarSesion!();
+                        }
+                      },
+                      child: const Text(
+                        'Cerrar sesión',
+                      ),
+                      backgroundColor: Colors.red,
+                      textColor: Colors.white,
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         ),
@@ -99,16 +149,30 @@ class _Item extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
+
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 13,
+        ),
+
         child: Row(
           children: [
-            Icon(icon, color: color, size: 20),
+
+            Icon(
+              icon,
+              color: color,
+              size: 20,
+            ),
+
             const SizedBox(width: 12),
+
             Text(
               label,
               style: TextStyle(
-                color: color == Colors.red ? Colors.red : Colors.black87,
+                color: color == Colors.red
+                    ? Colors.red
+                    : Colors.black87,
                 fontWeight: FontWeight.w500,
                 fontSize: 14,
               ),
