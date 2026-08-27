@@ -11,15 +11,7 @@ class NotificacionesService {
   // ============================================================
 
   /// Convierte una fecha ISO a formato relativo local (ej: "Hace 5 min")
-  static String tiempoRelativo(String? fecha) {
-    if (fecha == null) return '';
-    final fechaUtc = DateTime.parse(fecha).toLocal();
-    final diff = DateTime.now().difference(fechaUtc);
-    if (diff.inMinutes < 1) return 'Ahora';
-    if (diff.inMinutes < 60) return 'Hace ${diff.inMinutes} min';
-    if (diff.inHours < 24) return 'Hace ${diff.inHours}h';
-    return 'Hace ${diff.inDays}d';
-  }
+  
 
   // ============================================================
   // GESTIÓN DE VISTAS Y CONTEO
