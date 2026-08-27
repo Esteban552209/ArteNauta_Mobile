@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
-import '../services/session_service.dart';
 
 class AppHeader extends StatelessWidget {
   final int idRol;

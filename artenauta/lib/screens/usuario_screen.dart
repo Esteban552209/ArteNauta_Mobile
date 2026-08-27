@@ -240,7 +240,7 @@ class _TestUsuarioScreenState extends State<TestUsuarioScreen> {
               height: 300,
               width: double.infinity,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              errorBuilder: (_, _, _) => const SizedBox.shrink(),
             ),
 
           Padding(

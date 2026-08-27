@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
-import '../services/notificaciones_service.dart';
 
 class AppMenu extends StatelessWidget {
   final int idRol;
