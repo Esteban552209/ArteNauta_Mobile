@@ -3,7 +3,7 @@ import '../core/theme/app_theme.dart';
 import '../services/auth_service.dart';
 import '../widgets/gradient_header.dart';
 import 'register_screen.dart';
-
+import 'package:art_sweetalert_new/art_sweetalert_new.dart';
 import 'admin/admin_users_screen.dart';
 import 'artista_screen.dart';
 import 'usuario_screen.dart';
@@ -25,68 +25,79 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _mostrarClave = false;
 
   Future<void> _handleLogin() async {
-    final email = _emailController.text.trim();
-    final clave = _claveController.text.trim();
+  final email = _emailController.text.trim();
+  final clave = _claveController.text.trim();
 
-    if (email.isEmpty || clave.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor completa todos los campos'),
-        ),
-      );
-      return;
+  setState(() {
+    _isLoading = true;
+  });
+
+  try {
+    final int idRol = await _authService.loginConEdgeFunction(
+      email: email,
+      clave: clave,
+    );
+
+    if (!mounted) return;
+
+    // Redirección según rol
+    switch (idRol) {
+      case 3:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminUsersScreen()),
+        );
+        break;
+      case 2:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const TestArtistaScreen()),
+        );
+        break;
+      default:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const UsuarioScreen()),
+        );
+
+              ArtSweetAlert.show(
+              context: context,
+              type: ArtAlertType.success,
+              title: const Text('Bienvenido'),
+              content: const Text(
+                'La sesion se inicio correctamente.',
+              )
+            );
     }
+  } catch (e) {
+    if (!mounted) return;
 
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final int idRol = await _authService.loginConEdgeFunction(
-        email: email,
-        clave: clave,
-      );
-
-      if (!mounted) return;
-
-      switch (idRol) {
-        case 3:
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const AdminUsersScreen()),
-          );
-          break;
-        case 2:
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const TestArtistaScreen()),
-          );
-          break;
-        default:
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const TestUsuarioScreen()),
-          );
-      }
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            e.toString().replaceAll('Exception: ', ''),
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+    ArtSweetAlert.show(
+  context: context,
+  type: ArtAlertType.warning,
+  title: const Text('Campos incompletos'),
+  content: const Text(
+    'Por favor completa todos los campos para continuar.',
+  ),
+  actions: [
+    ArtAlertButton(
+      onPressed: () {
+        Navigator.pop(context);
+      },
+      child: const Text('Entendido'),
+      backgroundColor: AppTheme.primaryCyan,
+      textColor: Colors.white,
+    ),
+  ],
+);
+  } finally {
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
+}
 
   @override
   void dispose() {

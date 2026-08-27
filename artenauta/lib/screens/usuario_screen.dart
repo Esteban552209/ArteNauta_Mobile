@@ -6,151 +6,277 @@ import '../services/notificaciones_service.dart';
 import '../widgets/app_header.dart';
 import '../widgets/app_menu.dart';
 import '../widgets/gradient_header.dart';
-import '../widgets/notificaciones_panel.dart';
+import '../widgets/notificaciones/notificaciones_panel.dart';
+import '../widgets/publicaciones/publicacion_card.dart';
 import '../screens/perfil_screen.dart';
 import '../screens/login_screen.dart';
 
-class TestUsuarioScreen extends StatefulWidget {
-  const TestUsuarioScreen({super.key});
+class UsuarioScreen extends StatefulWidget {
+  const UsuarioScreen({super.key});
 
   @override
-  State<TestUsuarioScreen> createState() => _TestUsuarioScreenState();
+  State<UsuarioScreen> createState() => _UsuarioScreenState();
 }
 
-class _TestUsuarioScreenState extends State<TestUsuarioScreen> {
-  final PublicacionesService _publicacionesService = PublicacionesService();
-  
+class _UsuarioScreenState extends State<UsuarioScreen> {
+  final PublicacionesService _publicacionesService =
+      PublicacionesService();
+
   Map<String, dynamic>? _usuario;
+
   bool _menuAbierto = false;
+
   int _notifCount = 0;
 
   @override
   void initState() {
     super.initState();
-    _cargar();
+    _cargarDatos();
   }
 
-  // 1. Conteo optimizado usando contarNuevas()
-  Future<void> _cargar() async {
-    final u = await SessionService.getUsuario();
-    final count = await NotificacionesService.contarNuevas();
-    
-    setState(() {
-      _usuario = u;
-      _notifCount = count;
-    });
+  // ============================================================
+  // CARGAR USUARIO Y NOTIFICACIONES
+  // ============================================================
+
+  Future<void> _cargarDatos() async {
+    try {
+      final usuario = await SessionService.getUsuario();
+
+      final count =
+          await NotificacionesService.contarNuevas();
+
+      if (!mounted) return;
+
+      setState(() {
+        _usuario = usuario;
+        _notifCount = count;
+      });
+    } catch (e) {
+      debugPrint(
+        'Error cargando datos del usuario: $e',
+      );
+    }
   }
 
-  // 2. Nuevo método para abrir notificaciones y actualizar el contador al volver
   Future<void> _abrirNotificaciones() async {
     _cerrarMenu();
+
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const NotificacionesPanel()),
+      MaterialPageRoute(
+        builder: (_) => const NotificacionesPanel(),
+      ),
     );
-    final count = await NotificacionesService.contarNuevas();
-    setState(() => _notifCount = count);
+
+    try {
+      final count =
+          await NotificacionesService.contarNuevas();
+
+      if (!mounted) return;
+
+      setState(() {
+        _notifCount = count;
+      });
+    } catch (e) {
+      debugPrint(
+        'Error actualizando notificaciones: $e',
+      );
+    }
   }
 
   Future<void> _cerrarSesion() async {
     await SessionService.cerrarSesion();
+
     if (!mounted) return;
+
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      MaterialPageRoute(
+        builder: (_) => const LoginScreen(),
+      ),
     );
   }
 
-  void _cerrarMenu() => setState(() => _menuAbierto = false);
+  void _cerrarMenu() {
+    if (_menuAbierto) {
+      setState(() {
+        _menuAbierto = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final nombre = _usuario?['nombre'] ?? 'Usuario';
-    final idRol = int.tryParse(_usuario?['id_rol'].toString() ?? '1') ?? 1;
+    final nombre =
+        _usuario?['nombre'] ?? 'Usuario';
+
+    final idRol =
+        int.tryParse(
+              _usuario?['id_rol']?.toString() ?? '1',
+            ) ??
+            1;
 
     return Scaffold(
       body: SafeArea(
         child: GestureDetector(
           onTap: () {
-            if (_menuAbierto) _cerrarMenu();
+            if (_menuAbierto) {
+              _cerrarMenu();
+            }
           },
+
           child: Column(
             children: [
+
               AppHeader(
                 idRol: idRol,
                 nombre: nombre,
                 menuAbierto: _menuAbierto,
                 notifCount: _notifCount,
-                onMenuTap: () => setState(() => _menuAbierto = !_menuAbierto),
-              ),
 
-              // CONTENIDO PRINCIPAL Y MENÚ
+                onMenuTap: () {
+                  setState(() {
+                    _menuAbierto =
+                        !_menuAbierto;
+                  });
+                },
+              ),
               Expanded(
                 child: Stack(
                   children: [
-                    // Feed / Muro de publicaciones
+
                     Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
+
                       children: [
+
                         Padding(
-                          padding: const EdgeInsets.all(16.0),
+                          padding:
+                              const EdgeInsets.all(16),
+
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
+
                             children: [
+
                               Text(
                                 'Bienvenido, $nombre',
-                                style: const TextStyle(
+
+                                style:
+                                    const TextStyle(
                                   fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.primaryCyan,
+                                  fontWeight:
+                                      FontWeight.bold,
+                                  color:
+                                      AppTheme
+                                          .primaryCyan,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+
+                              const SizedBox(
+                                height: 4,
+                              ),
+
                               const Text(
                                 'Explora y descubre arte en ArteNauta',
-                                style: TextStyle(color: AppTheme.textSecondary),
+
+                                style:
+                                    TextStyle(
+                                  color: AppTheme
+                                      .textSecondary,
+                                ),
                               ),
                             ],
                           ),
                         ),
-                        Expanded(
-                          child: FutureBuilder<List<Map<String, dynamic>>>(
-                            future: _publicacionesService.obtenerPublicaciones(),
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState == ConnectionState.waiting) {
-                                return const Center(
-                                  child: CircularProgressIndicator(color: AppTheme.primaryCyan),
-                                );
-                              }
 
-                              if (snapshot.hasError) {
-                                return Center(
-                                  child: Text(
-                                    'Error al cargar publicaciones:\n${snapshot.error}',
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(color: Colors.red),
+                        Expanded(
+                          child: FutureBuilder<
+                              List<Map<String, dynamic>>>(
+                            future:
+                                _publicacionesService
+                                    .obtenerPublicaciones(),
+
+                            builder:
+                                (context, snapshot) {
+
+                              // Cargando
+                              if (snapshot
+                                      .connectionState ==
+                                  ConnectionState.waiting) {
+                                return const Center(
+                                  child:
+                                      CircularProgressIndicator(
+                                    color: AppTheme
+                                        .primaryCyan,
                                   ),
                                 );
                               }
 
-                              final publicaciones = snapshot.data ?? [];
+                              // Error
+                              if (snapshot.hasError) {
+                                return Center(
+                                  child: Padding(
+                                    padding:
+                                        const EdgeInsets.all(
+                                            20),
 
-                              if (publicaciones.isEmpty) {
-                                return const Center(
-                                  child: Text('No hay publicaciones disponibles por el momento.'),
+                                    child: Text(
+                                      'Error al cargar publicaciones:\n'
+                                      '${snapshot.error}',
+
+                                      textAlign:
+                                          TextAlign.center,
+
+                                      style:
+                                          const TextStyle(
+                                        color: Colors.red,
+                                      ),
+                                    ),
+                                  ),
                                 );
                               }
 
+                              final publicaciones =
+                                  snapshot.data ?? [];
+
+                              // Sin publicaciones
+                              if (publicaciones.isEmpty) {
+                                return const Center(
+                                  child: Text(
+                                    'No hay publicaciones disponibles por el momento.',
+                                  ),
+                                );
+                              }
+
+                              // Publicaciones
                               return RefreshIndicator(
                                 onRefresh: () async {
                                   setState(() {});
                                 },
-                                child: ListView.builder(
-                                  padding: const EdgeInsets.all(12.0),
-                                  itemCount: publicaciones.length,
-                                  itemBuilder: (context, index) {
-                                    final pub = publicaciones[index];
-                                    return _buildCardPublicacion(pub);
+
+                                child:
+                                    ListView.builder(
+                                  padding:
+                                      const EdgeInsets.all(
+                                          12),
+
+                                  itemCount:
+                                      publicaciones.length,
+
+                                  itemBuilder:
+                                      (context, index) {
+
+                                    final publicacion =
+                                        publicaciones[
+                                            index];
+
+                                    return PublicacionCard(
+                                      publicacion:
+                                          publicacion,
+                                    );
                                   },
                                 ),
                               );
@@ -159,42 +285,55 @@ class _TestUsuarioScreenState extends State<TestUsuarioScreen> {
                         ),
                       ],
                     ),
-
-                    // MENÚ DESPLEGABLE OVERLAY
                     if (_menuAbierto)
                       Positioned(
                         top: 0,
                         right: 16,
+
                         child: AppMenu(
                           idRol: idRol,
                           notifCount: _notifCount,
+
                           onMiPerfil: () {
                             _cerrarMenu();
+
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (_) => const PerfilScreen()),
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const PerfilScreen(),
+                              ),
                             );
                           },
+
                           onConversaciones: () {
                             _cerrarMenu();
+
+                            // Aquí posteriormente
+                            // podemos conectar conversaciones.
                           },
-                          onNotificaciones: _abrirNotificaciones, // Vinculado aquí
-                          onCerrarSesion: _cerrarSesion,
+
+                          onNotificaciones:
+                              _abrirNotificaciones,
+
+                          onCerrarSesion:
+                              _cerrarSesion,
                         ),
                       ),
                   ],
                 ),
               ),
-
-              // FOOTER
               const GradientHeader(
                 height: 40,
+
                 child: Center(
                   child: Text(
                     '©2026 ArteNauta',
+
                     style: TextStyle(
                       color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                      fontWeight:
+                          FontWeight.bold,
                       fontSize: 13,
                     ),
                   ),
@@ -203,83 +342,6 @@ class _TestUsuarioScreenState extends State<TestUsuarioScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildCardPublicacion(Map<String, dynamic> pub) {
-    final titulo = pub['titulo'] ?? 'Sin título';
-    final descripcion = pub['descripcion'] ?? pub['contenido'] ?? '';
-    final contenidoUrl = pub['contenido'];
-
-    return Card(
-      elevation: 3,
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ListTile(
-            leading: const CircleAvatar(
-              backgroundColor: AppTheme.primaryCyan,
-              child: Icon(Icons.palette, color: Colors.white),
-            ),
-            title: Text(
-              titulo,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            subtitle: Text(
-              'Categoría ID: ${pub['id_categoria'] ?? 'General'}',
-              style: const TextStyle(fontSize: 12),
-            ),
-          ),
-
-          if (contenidoUrl != null && contenidoUrl.toString().startsWith('http'))
-            Image.network(
-              contenidoUrl,
-              height: 300,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => const SizedBox.shrink(),
-            ),
-
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Text(
-              descripcion,
-              style: const TextStyle(fontSize: 14, color: Colors.black87),
-            ),
-          ),
-
-          const Divider(height: 1),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                TextButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Diste like a "$titulo"')),
-                    );
-                  },
-                  icon: const Icon(Icons.favorite_border, color: Colors.redAccent),
-                  label: const Text('Me gusta', style: TextStyle(color: Colors.black87)),
-                ),
-                TextButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Ver comentarios de "$titulo"')),
-                    );
-                  },
-                  icon: const Icon(Icons.chat_bubble_outline, color: AppTheme.primaryCyan),
-                  label: const Text('Comentar', style: TextStyle(color: Colors.black87)),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
