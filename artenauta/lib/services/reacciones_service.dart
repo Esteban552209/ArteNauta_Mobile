@@ -17,6 +17,37 @@ class ReaccionesService {
         'id_usuario': idUsuario,
         'id_publicacion': idPublicacion,
       });
+
+      // ── Notificar al artista ──────────────────────────────
+      // 1. Obtener id_usuario_artista de la publicación
+      final pub = await _supabase
+          .from('publicaciones')
+          .select('id_usuario_artista')
+          .eq('id_publicacion', idPublicacion)
+          .single();
+
+      final idArtista = pub['id_usuario_artista'] as int?;
+
+      // 2. No notificar si el artista se dio like a sí mismo
+      if (idArtista != null && idArtista != idUsuario) {
+        // 3. Obtener nombre del usuario que dio like
+        final usuario = await _supabase
+            .from('usuarios')
+            .select('nombre')
+            .eq('id_usuario', idUsuario)
+            .single();
+
+        final nombre = usuario['nombre'] ?? 'Alguien';
+
+        // 4. Insertar notificación
+        await _supabase.from('notificaciones').insert({
+          'id_usuario': idArtista,
+          'asunto': '$nombre le dio Me gusta a tu publicación',
+          'tipo_notificacion': 'Reaccion',
+          'fecha_notificacion': DateTime.now().toUtc().toIso8601String(),
+        });
+      }
+      // ─────────────────────────────────────────────────────
     } catch (e) {
       throw Exception('Error al dar Me Gusta: $e');
     }
@@ -61,9 +92,7 @@ class ReaccionesService {
 
       return response != null;
     } catch (e) {
-      throw Exception(
-        'Error comprobando el Me Gusta: $e',
-      );
+      throw Exception('Error comprobando el Me Gusta: $e');
     }
   }
 
@@ -83,9 +112,7 @@ class ReaccionesService {
 
       return response.length;
     } catch (e) {
-      throw Exception(
-        'Error obteniendo los Me Gusta: $e',
-      );
+      throw Exception('Error obteniendo los Me Gusta: $e');
     }
   }
 }

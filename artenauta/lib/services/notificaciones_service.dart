@@ -11,7 +11,7 @@ class NotificacionesService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       _keyUltimaVista,
-      DateTime.now().toIso8601String(),
+      DateTime.now().toUtc().toIso8601String()
     );
   }
 
@@ -89,7 +89,7 @@ class NotificacionesService {
         'id_usuario': idUsuario,
         'asunto': asunto,
         'tipo_notificacion': tipoNotificacion,
-        'fecha_notificacion': DateTime.now().toIso8601String(),
+        'fecha_notificacion': DateTime.now().toUtc().toIso8601String(),
       });
       return true;
     } catch (e) {
@@ -122,7 +122,7 @@ class NotificacionesService {
         'id_usuario': idUsuario,
         'asunto': '¡Tu solicitud para ser artista fue aprobada!',
         'tipo_notificacion': 'solicitud_aprobada',
-        'fecha_notificacion': DateTime.now().toIso8601String(),
+        'fecha_notificacion': DateTime.now().toUtc().toIso8601String(),
       });
 
       return true;
@@ -151,7 +151,7 @@ class NotificacionesService {
         'id_usuario': idUsuario,
         'asunto': 'Tu solicitud para ser artista no fue aprobada.',
         'tipo_notificacion': 'solicitud_rechazada',
-        'fecha_notificacion': DateTime.now().toIso8601String(),
+        'fecha_notificacion': DateTime.now().toUtc().toIso8601String(),
       });
 
       return true;
