@@ -5,7 +5,7 @@ import 'package:art_sweetalert_new/art_sweetalert_new.dart';
 
 class AppMenu extends StatelessWidget {
   final int idRol;
-  final int notifCount; // ← nuevo
+  final int notifCount; 
   final VoidCallback? onNuevaPublicacion;
   final VoidCallback? onMiPerfil;
   final VoidCallback? onConversaciones;
@@ -15,7 +15,7 @@ class AppMenu extends StatelessWidget {
   const AppMenu({
     super.key,
     required this.idRol,
-    this.notifCount = 0, // ← default 0
+    this.notifCount = 0, 
     this.onNuevaPublicacion,
     this.onMiPerfil,
     this.onConversaciones,

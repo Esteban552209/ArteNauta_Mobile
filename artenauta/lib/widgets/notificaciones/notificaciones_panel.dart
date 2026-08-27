@@ -46,10 +46,6 @@ class _NotificacionesPanelState extends State<NotificacionesPanel> {
   final fechaLocal = DateTime.parse(fecha).toLocal();
   final ahora = DateTime.now();
   final diff = ahora.difference(fechaLocal);
-  debugPrint('fecha raw: $fecha');
-  debugPrint('fechaLocal: $fechaLocal');
-  debugPrint('ahora: $ahora');
-  debugPrint('diff minutos: ${diff.inMinutes}');
   if (diff.inMinutes < 1) return 'Ahora';
   if (diff.inMinutes < 60) return 'Hace ${diff.inMinutes} min';
   if (diff.inHours < 24) return 'Hace ${diff.inHours}h';
