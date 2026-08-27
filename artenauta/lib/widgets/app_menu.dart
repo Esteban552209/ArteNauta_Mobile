@@ -146,12 +146,12 @@ class AppMenu extends StatelessWidget {
                         Navigator.pop(context);
                       },
 
+                      backgroundColor: Colors.grey,
+                      textColor: Colors.white,
+
                       child: const Text(
                         'Cancelar',
                       ),
-
-                      backgroundColor: Colors.grey,
-                      textColor: Colors.white,
                     ),
 
                     ArtAlertButton(
@@ -161,11 +161,11 @@ class AppMenu extends StatelessWidget {
                           onCerrarSesion!();
                         }
                       },
+                      backgroundColor: Colors.red,
+                      textColor: Colors.white,
                       child: const Text(
                         'Cerrar sesión',
                       ),
-                      backgroundColor: Colors.red,
-                      textColor: Colors.white,
                     ),
                   ],
                 );

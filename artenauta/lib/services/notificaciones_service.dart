@@ -6,16 +6,35 @@ class NotificacionesService {
   static final SupabaseClient _supabase = Supabase.instance.client;
   static const String _keyUltimaVista = 'notif_ultima_vista';
 
-  /// Guarda la fecha actual como última vez que se vieron las notificaciones
+  // ============================================================
+  // FORMATEO DE TIEMPO
+  // ============================================================
+
+  /// Convierte una fecha ISO a formato relativo local (ej: "Hace 5 min")
+  static String tiempoRelativo(String? fecha) {
+    if (fecha == null) return '';
+    final fechaUtc = DateTime.parse(fecha).toLocal();
+    final diff = DateTime.now().difference(fechaUtc);
+    if (diff.inMinutes < 1) return 'Ahora';
+    if (diff.inMinutes < 60) return 'Hace ${diff.inMinutes} min';
+    if (diff.inHours < 24) return 'Hace ${diff.inHours}h';
+    return 'Hace ${diff.inDays}d';
+  }
+
+  // ============================================================
+  // GESTIÓN DE VISTAS Y CONTEO
+  // ============================================================
+
+  /// Guarda la fecha actual en UTC como última vista
   static Future<void> marcarComoVistas() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       _keyUltimaVista,
-      DateTime.now().toUtc().toIso8601String()
+      DateTime.now().toUtc().toIso8601String(),
     );
   }
 
-  /// Obtiene cuántas notificaciones son nuevas desde la última vez que se abrió
+  /// Obtiene cuántas notificaciones son nuevas desde la última fecha registrada
   static Future<int> contarNuevas() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -25,22 +44,28 @@ class NotificacionesService {
       final idUsuario = usuario?['id_usuario'];
       if (idUsuario == null) return 0;
 
+      // 1. Inicia la consulta filtrando por usuario
       var query = _supabase
           .from('notificaciones')
           .select('id_notificacion')
           .eq('id_usuario', idUsuario);
 
-      // Si hay fecha guardada, solo cuenta las más nuevas
+      // 2. Si existe marca de tiempo previa, filtra solo las posteriores (gt = greater than)
       if (ultimaVista != null) {
         query = query.gt('fecha_notificacion', ultimaVista);
       }
 
+      // 3. Ejecuta la consulta
       final response = await query;
       return (response as List).length;
     } catch (e) {
       return 0;
     }
   }
+
+  // ============================================================
+  // CONSULTAS (GET)
+  // ============================================================
 
   /// GET: Obtener notificaciones del usuario logueado
   static Future<List<Map<String, dynamic>>> getNotificaciones() async {
@@ -62,7 +87,7 @@ class NotificacionesService {
     }
   }
 
-  /// GET: Obtener solicitudes pendientes (solo admin rol 3)
+  /// GET: Obtener solicitudes pendientes (solo admin)
   static Future<List<Map<String, dynamic>>> getSolicitudes() async {
     try {
       final response = await _supabase
@@ -78,7 +103,11 @@ class NotificacionesService {
     }
   }
 
-  /// POST: Crear una nueva notificación
+  // ============================================================
+  // OPERACIONES DE ESCRITURA (POST / PATCH)
+  // ============================================================
+
+  /// POST: Crear una nueva notificación en formato UTC
   static Future<bool> crearNotificacion({
     required int idUsuario,
     required String asunto,
