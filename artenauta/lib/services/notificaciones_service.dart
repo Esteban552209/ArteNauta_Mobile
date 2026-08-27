@@ -6,12 +6,6 @@ class NotificacionesService {
   static final SupabaseClient _supabase = Supabase.instance.client;
   static const String _keyUltimaVista = 'notif_ultima_vista';
 
-  // ============================================================
-  // FORMATEO DE TIEMPO
-  // ============================================================
-
-  /// Convierte una fecha ISO a formato relativo local (ej: "Hace 5 min")
-  
 
   // ============================================================
   // GESTIÓN DE VISTAS Y CONTEO
