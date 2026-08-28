@@ -1,8 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../services/session_service.dart';
+import '../screens/login_screen.dart';
+import '../screens/admin/gestion_usuarios_screen.dart';
 
 class AdminDrawer extends StatelessWidget {
   const AdminDrawer({super.key});
+
+  void _cerrarSesion(BuildContext context) async {
+    await SessionService.cerrarSesion();
+    
+    if (!context.mounted) return;
+    
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false, 
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +39,7 @@ class AdminDrawer extends StatelessWidget {
                 ),
                 IconButton(
                   icon: const Icon(Icons.close, color: Colors.white),
-                  onPressed: () => Navigator.pop(context), // Cierra el menú
+                  onPressed: () => Navigator.pop(context), 
                 )
               ],
             ),
@@ -32,18 +47,22 @@ class AdminDrawer extends StatelessWidget {
           
           _buildMenuItem(
             title: 'Usuarios',
-            svgPath: 'assets/icons/users.svg',
+            svgPath: 'assets/icons/usuarios.svg',
             onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const GestionUsuariosScreen()),
+              );
             },
           ),
           _buildMenuItem(
             title: 'Publicaciones',
-            svgPath: 'assets/icons/posts.svg',
+            svgPath: 'assets/icons/publicaciones.svg',
             onTap: () {},
           ),
           _buildMenuItem(
             title: 'Comentarios',
-            svgPath: 'assets/icons/comments.svg',
+            svgPath: 'assets/icons/comentarios.svg',
             onTap: () {},
           ),
           
@@ -51,9 +70,8 @@ class AdminDrawer extends StatelessWidget {
           
           _buildMenuItem(
             title: 'Cerrar Sesión',
-            svgPath: 'assets/icons/logout.svg',
-            onTap: () {
-            },
+            svgPath: 'assets/icons/log_out.svg',
+            onTap: () => _cerrarSesion(context),
           ),
         ],
       ),
@@ -66,7 +84,7 @@ class AdminDrawer extends StatelessWidget {
         svgPath,
         width: 24,
         height: 24,
-        colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn), // Pinta el SVG de blanco
+        colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn), 
       ),
       title: Text(
         title,

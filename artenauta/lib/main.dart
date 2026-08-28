@@ -50,8 +50,7 @@ class _SplashRouterState extends State<SplashRouter> {
     _verificar();
   }
 
-  Future<void> _verificar() async {
-    await SessionService.cerrarSesion(); 
+  Future<void> _verificar() async { 
 
     final hay = await SessionService.haySesion();
     if (!mounted) return;

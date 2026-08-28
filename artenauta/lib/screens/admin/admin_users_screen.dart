@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../core/theme/app_theme.dart';
 import '../../widgets/gradient_header.dart';
 import '../../services/session_service.dart';
+import '../../widgets/admin_drawer.dart';
 
 class AdminUsersScreen extends StatefulWidget {
   const AdminUsersScreen({super.key});
@@ -14,7 +15,6 @@ class AdminUsersScreen extends StatefulWidget {
 }
 
 class _AdminUsersScreenState extends State<AdminUsersScreen> {
-
   int _totalUsuarios = 0;
   int _totalArtistas = 0;
   int _totalObras = 0;
@@ -30,24 +30,28 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   Future<void> _cargarEstadisticas() async {
     try {
       final String? token = await SessionService.getToken();
-      
+
       if (token == null) throw Exception('No hay sesión activa');
 
-      final String baseUrl = dotenv.env['SUPABASE_URL']!; 
+      final String baseUrl = dotenv.env['SUPABASE_URL']!;
       final url = Uri.parse('$baseUrl/functions/v1/estadisticas');
 
       final response = await http.get(
         url,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token', 
+          'Authorization': 'Bearer $token',
         },
       );
 
       final data = jsonDecode(response.body);
 
       if (response.statusCode != 200) {
-        throw Exception(data['error'] ?? data['mensaje'] ?? 'Error al cargar datos HTTP ${response.statusCode}');
+        throw Exception(
+          data['error'] ??
+              data['mensaje'] ??
+              'Error al cargar datos HTTP ${response.statusCode}',
+        );
       }
 
       if (mounted) {
@@ -61,7 +65,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       }
     } catch (e) {
       debugPrint("Error real en petición a la API: $e");
-      
+
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -75,6 +79,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      endDrawer: const AdminDrawer(),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -89,7 +94,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   children: [
                     Image.asset(
                       'assets/LOGO.png',
-                      height: 75, 
+                      height: 75,
                       fit: BoxFit.contain,
                     ),
                     Container(
@@ -97,9 +102,18 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                         color: Colors.black.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                       ),
-                      child: IconButton(
-                        icon: const Icon(Icons.more_horiz, color: Colors.white),
-                        onPressed: () {},
+                      child: Builder(
+                        builder: (context) {
+                          return IconButton(
+                            icon: const Icon(
+                              Icons.more_horiz,
+                              color: Colors.white,
+                            ),
+                            onPressed: () {
+                              Scaffold.of(context).openEndDrawer();
+                            },
+                          );
+                        },
                       ),
                     ),
                   ],
@@ -107,7 +121,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
               ),
             ),
           ),
-
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -121,16 +134,32 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.primaryCyan, 
+                            color: AppTheme.primaryCyan,
                             height: 1.2,
                           ),
                         ),
                         const SizedBox(height: 30),
 
-                        _buildStatCard('Usuarios en Total', _totalUsuarios, const Color(0xFF00BCD4)),
-                        _buildStatCard('Artistas Verificados', _totalArtistas, const Color(0xFF673AB7)),
-                        _buildStatCard('Obras Publicadas', _totalObras, const Color(0xFF4CAF50)),
-                        _buildStatCard('Comentarios', _totalComentarios, const Color(0xFFFFC107)),
+                        _buildStatCard(
+                          'Usuarios en Total',
+                          _totalUsuarios,
+                          const Color(0xFF00BCD4),
+                        ),
+                        _buildStatCard(
+                          'Artistas Verificados',
+                          _totalArtistas,
+                          const Color(0xFF673AB7),
+                        ),
+                        _buildStatCard(
+                          'Obras Publicadas',
+                          _totalObras,
+                          const Color(0xFF4CAF50),
+                        ),
+                        _buildStatCard(
+                          'Comentarios',
+                          _totalComentarios,
+                          const Color(0xFFFFC107),
+                        ),
                       ],
                     ),
                   ),
@@ -169,7 +198,10 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 24,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
