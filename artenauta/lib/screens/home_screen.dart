@@ -1,3 +1,4 @@
+import 'package:artenauta/screens/conversaciones_screen.dart';
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../widgets/gradient_header.dart';
@@ -200,6 +201,20 @@ class _HomeScreenState extends State<HomeScreen> {
                             // navegar a nueva publicación
                           },
                         ),
+                        const Divider(height: 1),
+
+                        _itemMenu(
+                          icon: Icons.chat_bubble_outline,
+                          label: 'Conversaciones',
+                          color: AppTheme.primaryCyan,
+                          onTap: () {
+                            setState(() => _menuAbierto = false);
+                            Navigator.push(
+                            context,
+                          MaterialPageRoute(builder: (_) => const ConversacionesScreen()),
+                          );
+                          },
+                          ),
                         const Divider(height: 1),
                         
                         // INTEGRACIÓN DE MI PERFIL AQUÍ
