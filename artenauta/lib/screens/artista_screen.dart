@@ -8,6 +8,7 @@ import '../widgets/gradient_header.dart';
 import '../widgets/notificaciones/notificaciones_panel.dart';
 import '../screens/perfil_screen.dart';
 import '../screens/login_screen.dart';
+import '../screens/conversaciones_screen.dart';
 
 class TestArtistaScreen extends StatefulWidget {
   const TestArtistaScreen({super.key});
@@ -78,8 +79,7 @@ class _TestArtistaScreenState extends State<TestArtistaScreen> {
               nombre: nombre,
               menuAbierto: _menuAbierto,
               notifCount: _notifCount,
-              onMenuTap: () =>
-                  setState(() => _menuAbierto = !_menuAbierto),
+              onMenuTap: () => setState(() => _menuAbierto = !_menuAbierto),
             ),
 
             Expanded(
@@ -101,8 +101,7 @@ class _TestArtistaScreenState extends State<TestArtistaScreen> {
                         const SizedBox(height: 4),
                         const Text(
                           'Tu espacio creativo en ArteNauta',
-                          style:
-                              TextStyle(color: AppTheme.textSecondary),
+                          style: TextStyle(color: AppTheme.textSecondary),
                         ),
                       ],
                     ),
@@ -124,11 +123,18 @@ class _TestArtistaScreenState extends State<TestArtistaScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (_) => const PerfilScreen()),
+                              builder: (_) => const PerfilScreen(),
+                            ),
                           );
                         },
                         onConversaciones: () {
                           _cerrarMenu();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ConversacionesScreen(),
+                            ),
+                          );
                         },
                         onNotificaciones: _abrirNotificaciones, // ← nuevo
                         onCerrarSesion: _cerrarSesion,

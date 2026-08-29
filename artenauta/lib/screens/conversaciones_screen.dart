@@ -52,18 +52,25 @@ class _ConversacionesScreenState extends State<ConversacionesScreen> {
       });
       return;
     }
-    final resultados =
-        await ConversacionesService.buscarUsuarioPorEmail(query, _miId!);
+    final resultados = await ConversacionesService.buscarUsuarioPorEmail(
+      query,
+      _miId!,
+    );
     setState(() {
       _buscando = true;
       _resultadosBusqueda = resultados;
     });
   }
 
-  Future<void> _abrirOCrearConversacion(int idUsuarioOtro, String nombre) async {
+  Future<void> _abrirOCrearConversacion(
+    int idUsuarioOtro,
+    String nombre,
+  ) async {
     if (_miId == null) return;
-    final idConversacion =
-        await ConversacionesService.crearConversacion(_miId!, idUsuarioOtro);
+    final idConversacion = await ConversacionesService.crearConversacion(
+      _miId!,
+      idUsuarioOtro,
+    );
     if (!mounted) return;
     _buscadorController.clear();
     setState(() {
@@ -89,7 +96,8 @@ class _ConversacionesScreenState extends State<ConversacionesScreen> {
       builder: (_) => AlertDialog(
         title: const Text('¿Deseas eliminar el chat?'),
         content: const Text(
-            'Si eliminas la conversación se borrará todo tipo de registro'),
+          'Si eliminas la conversación se borrará todo tipo de registro',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -97,7 +105,9 @@ class _ConversacionesScreenState extends State<ConversacionesScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryCyan),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryCyan,
+            ),
             child: const Text('Aceptar', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -118,18 +128,23 @@ class _ConversacionesScreenState extends State<ConversacionesScreen> {
           children: [
             GradientHeader(
               height: 90,
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Mis conversaciones',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
                     ),
-                  ),
+                    const Text(
+                      'Mis conversaciones',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -154,8 +169,8 @@ class _ConversacionesScreenState extends State<ConversacionesScreen> {
               child: _cargando
                   ? const Center(child: CircularProgressIndicator())
                   : _buscando
-                      ? _listaResultados()
-                      : _listaConversaciones(),
+                  ? _listaResultados()
+                  : _listaConversaciones(),
             ),
           ],
         ),
@@ -166,7 +181,8 @@ class _ConversacionesScreenState extends State<ConversacionesScreen> {
   Widget _listaResultados() {
     if (_resultadosBusqueda.isEmpty) {
       return const Center(
-          child: Text('Sin resultados', style: TextStyle(color: Colors.grey)));
+        child: Text('Sin resultados', style: TextStyle(color: Colors.grey)),
+      );
     }
     return ListView.builder(
       itemCount: _resultadosBusqueda.length,
@@ -186,7 +202,10 @@ class _ConversacionesScreenState extends State<ConversacionesScreen> {
   Widget _listaConversaciones() {
     if (_conversaciones.isEmpty) {
       return const Center(
-        child: Text('Aún no tienes conversaciones', style: TextStyle(color: Colors.grey)),
+        child: Text(
+          'Aún no tienes conversaciones',
+          style: TextStyle(color: Colors.grey),
+        ),
       );
     }
     return RefreshIndicator(

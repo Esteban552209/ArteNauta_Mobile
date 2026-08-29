@@ -105,17 +105,46 @@ class ConversacionesService {
   }
 
   static Future<void> enviarMensaje({
-    required int idConversacion,
-    required int idUsuario,
-    required String contenido,
-  }) async {
-    await _client.from('mensajes').insert({
-      'id_conversacion': idConversacion,
-      'id_usuario': idUsuario,
-      'contenido': contenido,
-      'fecha_envio': DateTime.now().toIso8601String(),
-    });
-  }
+  required int idConversacion,
+  required int idUsuario,
+  required String contenido,
+}) async {
+  // 1. Insertar el mensaje
+  await _client.from('mensajes').insert({
+    'id_conversacion': idConversacion,
+    'id_usuario': idUsuario,
+    'contenido': contenido,
+    'fecha_envio': DateTime.now().toUtc().toIso8601String(),
+  });
+
+  // 2. Buscar al otro participante de la conversación
+  final otros = await _client
+      .from('participantes')
+      .select('id_usuario')
+      .eq('id_conversacion', idConversacion)
+      .neq('id_usuario', idUsuario);
+
+  if ((otros as List).isEmpty) return;
+
+  final idReceptor = otros[0]['id_usuario'] as int;
+
+  // 3. Obtener nombre del remitente
+  final remitente = await _client
+      .from('usuarios')
+      .select('nombre')
+      .eq('id_usuario', idUsuario)
+      .single();
+
+  final nombre = remitente['nombre'] ?? 'Alguien';
+
+  // 4. Insertar notificación al receptor
+  await _client.from('notificaciones').insert({
+    'id_usuario': idReceptor,
+    'asunto': '$nombre te envió un mensaje',
+    'tipo_notificacion': 'Mensaje',
+    'fecha_notificacion': DateTime.now().toUtc().toIso8601String(),
+  });
+}
 
   // Borra mensajes y participantes antes de la conversación (por si no hay ON DELETE CASCADE)
   static Future<void> eliminarConversacion(int idConversacion) async {
