@@ -3,9 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class ComentariosService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
-  // ============================================================
-  // OBTENER COMENTARIOS
-  // ============================================================
+  // Get: obtener y mostar los comentarios
 
   Future<List<Map<String, dynamic>>> obtenerComentarios(
     int idPublicacion,
@@ -25,9 +23,7 @@ class ComentariosService {
     }
   }
 
-  // ============================================================
-  // CREAR COMENTARIO
-  // ============================================================
+  // Path: Subir comentarios
 
   Future<void> crearComentario({
     required int idPublicacion,
@@ -47,9 +43,7 @@ class ComentariosService {
     }
   }
 
-  // ============================================================
-  // ELIMINAR COMENTARIO
-  // ============================================================
+  // Delete: Eliminar comentarios 
 
   Future<void> eliminarComentario(
     int idComentario,

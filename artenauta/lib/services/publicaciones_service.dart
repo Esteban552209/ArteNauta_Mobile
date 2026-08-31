@@ -17,17 +17,4 @@ class PublicacionesService {
       throw Exception('Error al obtener publicaciones: $e');
     }
   }
-
-  // Dar Me Gusta a una publicación 
-  Future<void> darMeGusta(int idPublicacion, int idUsuario) async {
-    await _supabase.from('likes').insert({
-      'id_publicacion': idPublicacion,
-      'id_usuario': idUsuario,
-    });
-  }
-
-  // Crear una nueva publicación 
-  Future<void> crearPublicacion(Map<String, dynamic> datosPublicacion) async {
-    await _supabase.from('publicaciones').insert(datosPublicacion);
-  }
 }

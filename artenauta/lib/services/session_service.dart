@@ -21,7 +21,6 @@ class SessionService {
     return prefs.getString(_keyToken);
   }
 
-  // Obtener usuario completo
   static Future<Map<String, dynamic>?> getUsuario() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_keyUsuario);
@@ -29,7 +28,6 @@ class SessionService {
     return jsonDecode(raw) as Map<String, dynamic>;
   }
 
-  // Obtener solo el id_rol
   static Future<int?> getRol() async {
     final usuario = await getUsuario();
     if (usuario == null) return null;

@@ -38,10 +38,6 @@ class _LikeButtonState
     _cargarInformacion();
   }
 
-  // ============================================================
-  // CARGAR INFORMACIÓN
-  // ============================================================
-
   Future<void> _cargarInformacion() async {
     if (widget.idPublicacion == null) {
       return;
@@ -96,10 +92,6 @@ class _LikeButtonState
     }
   }
 
-  // ============================================================
-  // ALTERNAR LIKE
-  // ============================================================
-
   Future<void> _alternarLike() async {
     if (_idUsuario == null ||
         widget.idPublicacion == null ||
@@ -113,10 +105,7 @@ class _LikeButtonState
 
     try {
       if (_dioLike) {
-        // ======================================================
-        // QUITAR LIKE
-        // ======================================================
-
+ 
         await _reaccionesService.quitarMeGusta(
           idPublicacion:
               widget.idPublicacion!,
@@ -134,9 +123,6 @@ class _LikeButtonState
           }
         });
       } else {
-        // ======================================================
-        // DAR LIKE
-        // ======================================================
 
         await _reaccionesService.darMeGusta(
           idPublicacion:
@@ -171,10 +157,6 @@ class _LikeButtonState
       });
     }
   }
-
-  // ============================================================
-  // BUILD
-  // ============================================================
 
   @override
   Widget build(BuildContext context) {

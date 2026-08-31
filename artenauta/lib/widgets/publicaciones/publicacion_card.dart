@@ -47,9 +47,6 @@ class PublicacionCard extends StatelessWidget {
         crossAxisAlignment:
             CrossAxisAlignment.start,
         children: [
-          // ======================================================
-          // CABECERA
-          // ======================================================
 
           ListTile(
             leading:
@@ -82,10 +79,6 @@ class PublicacionCard extends StatelessWidget {
             ),
           ),
 
-          // ======================================================
-          // IMAGEN
-          // ======================================================
-
           if (contenido != null &&
               contenido
                   .toString()
@@ -102,10 +95,6 @@ class PublicacionCard extends StatelessWidget {
               },
             ),
 
-          // ======================================================
-          // DESCRIPCIÓN
-          // ======================================================
-
           Padding(
             padding:
                 const EdgeInsets.all(12),
@@ -121,10 +110,6 @@ class PublicacionCard extends StatelessWidget {
 
           const Divider(height: 1),
 
-          // ======================================================
-          // BOTONES
-          // ======================================================
-
           Padding(
             padding:
                 const EdgeInsets.symmetric(
@@ -136,18 +121,11 @@ class PublicacionCard extends StatelessWidget {
               mainAxisAlignment:
                   MainAxisAlignment.spaceAround,
               children: [
-                // ------------------------------------------------
-                // LIKE
-                // ------------------------------------------------
 
                 LikeButton(
                   idPublicacion:
                       idPublicacion,
                 ),
-
-                // ------------------------------------------------
-                // COMENTARIOS
-                // ------------------------------------------------
 
                 TextButton.icon(
                   onPressed:

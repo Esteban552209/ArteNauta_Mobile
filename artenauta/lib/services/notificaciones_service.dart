@@ -3,9 +3,7 @@ import 'package:http/http.dart' as http;
 import 'session_service.dart';
 
 class NotificacionesService {
-  static const String _api = 'http://10.0.2.2:3000'; // Android emulator
-  // Si usas iPhone físico o dispositivo real, cambia por tu IP local:
-  // static const String _api = 'http://192.168.1.X:3000';
+  static const String _api = 'http://10.0.2.2:3000'; 
 
   // GET notificaciones del usuario
   static Future<List<Map<String, dynamic>>> getNotificaciones() async {
