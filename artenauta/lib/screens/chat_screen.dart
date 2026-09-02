@@ -32,15 +32,17 @@ class _ChatScreenState extends State<ChatScreen> {
     _cargarMensajes();
   }
 
-  Future<void> _cargarMensajes() async {
+    Future<void> _cargarMensajes() async {
     final lista = await ConversacionesService.getMensajes(widget.idConversacion);
     setState(() {
       _mensajes = lista;
       _cargando = false;
     });
     WidgetsBinding.instance.addPostFrameCallback((_) => _irAlFinal());
-  }
 
+    // Marca como leídos los mensajes del otro que aún no lo estaban
+    await ConversacionesService.marcarComoLeidos(widget.idConversacion, widget.miId);
+  }
   void _irAlFinal() {
     if (_scrollController.hasClients) {
       _scrollController.jumpTo(_scrollController.position.maxScrollExtent);

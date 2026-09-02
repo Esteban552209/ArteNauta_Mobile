@@ -5,7 +5,7 @@ import '../models/mensaje_model.dart';
 class ConversacionesService {
   static final _client = Supabase.instance.client;
 
-  // Lista de conversaciones del usuario logueado
+  // Lista de conversaciones del usuario logueado, con último mensaje y no leídos
   static Future<List<ConversacionModel>> getConversaciones(int idUsuario) async {
     final misParticipaciones = await _client
         .from('participantes')
@@ -25,9 +25,60 @@ class ConversacionesService {
         .inFilter('id_conversacion', idsConversaciones)
         .neq('id_usuario', idUsuario);
 
-    return (otros as List)
-        .map((e) => ConversacionModel.fromParticipante(e as Map<String, dynamic>))
-        .toList();
+    // Todos los mensajes de esas conversaciones, más recientes primero
+    final mensajes = await _client
+        .from('mensajes')
+        .select('id_conversacion, contenido, fecha_envio, id_usuario, leido')
+        .inFilter('id_conversacion', idsConversaciones)
+        .order('fecha_envio', ascending: false);
+
+    final ultimoPorConversacion = <int, Map<String, dynamic>>{};
+    final noLeidosPorConversacion = <int, int>{};
+
+    for (final m in (mensajes as List)) {
+      final idConv = m['id_conversacion'] as int;
+
+      // El primero que aparece por conversación (orden descendente) es el más reciente
+      ultimoPorConversacion.putIfAbsent(idConv, () => m as Map<String, dynamic>);
+
+      final esDeOtro = m['id_usuario'] != idUsuario;
+      final noLeido = m['leido'] == false;
+      if (esDeOtro && noLeido) {
+        noLeidosPorConversacion[idConv] = (noLeidosPorConversacion[idConv] ?? 0) + 1;
+      }
+    }
+
+    final lista = (otros as List).map((e) {
+      final map = e as Map<String, dynamic>;
+      final idConv = map['id_conversacion'] as int;
+      final ultimo = ultimoPorConversacion[idConv];
+      return ConversacionModel.fromParticipante(
+        map,
+        ultimoMensaje: ultimo?['contenido'] as String?,
+        fechaUltimoMensaje:
+            ultimo != null ? DateTime.parse(ultimo['fecha_envio']) : null,
+        noLeidos: noLeidosPorConversacion[idConv] ?? 0,
+      );
+    }).toList();
+
+    // Las más recientes primero, igual que WhatsApp
+    lista.sort((a, b) {
+      if (a.fechaUltimoMensaje == null) return 1;
+      if (b.fechaUltimoMensaje == null) return -1;
+      return b.fechaUltimoMensaje!.compareTo(a.fechaUltimoMensaje!);
+    });
+
+    return lista;
+  }
+
+  // Marca como leídos todos los mensajes de la otra persona en esta conversación
+  static Future<void> marcarComoLeidos(int idConversacion, int miId) async {
+    await _client
+        .from('mensajes')
+        .update({'leido': true})
+        .eq('id_conversacion', idConversacion)
+        .neq('id_usuario', miId)
+        .eq('leido', false);
   }
 
   // Buscar usuarios por correo para iniciar una conversación nueva
@@ -114,6 +165,7 @@ class ConversacionesService {
       'id_usuario': idUsuario,
       'contenido': contenido,
       'fecha_envio': DateTime.now().toIso8601String(),
+      'leido': false,
     });
   }
 
