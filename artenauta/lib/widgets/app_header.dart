@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
-import '../services/session_service.dart';
 
 class AppHeader extends StatelessWidget {
   final int idRol;
@@ -13,7 +12,7 @@ class AppHeader extends StatelessWidget {
     required this.idRol,
     required this.nombre,
     required this.menuAbierto,
-    required this.onMenuTap,
+    required this.onMenuTap, required int notifCount,
   });
 
   String get _tituloPanel {
