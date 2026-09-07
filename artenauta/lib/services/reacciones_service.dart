@@ -3,10 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class ReaccionesService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
-  // ============================================================
-  // DAR LIKE
-  // ============================================================
-
+  //
   Future<void> darMeGusta({
     required int idPublicacion,
     required int idUsuario,

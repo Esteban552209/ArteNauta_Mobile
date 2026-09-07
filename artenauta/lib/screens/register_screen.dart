@@ -36,7 +36,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final confirmarClave =
         _confirmarClaveController.text.trim();
 
-    // VALIDACIONES
 
     if (nombre.isEmpty ||
         apellido.isEmpty ||
@@ -175,9 +174,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         child: Column(
           children: [
 
-            // =========================
             // HEADER
-            // =========================
 
             const GradientHeader(
               height: 120,
@@ -194,10 +191,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             ),
 
-            // =========================
             // FORMULARIO
-            // =========================
-
+    
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(

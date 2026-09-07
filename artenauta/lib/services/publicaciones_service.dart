@@ -1,7 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'session_service.dart';
 
 class PublicacionesService {
-  final SupabaseClient _supabase = Supabase.instance.client;
+  static final SupabaseClient _supabase = Supabase.instance.client;
 
   // GET: Obtener todas las publicaciones activas
   Future<List<Map<String, dynamic>>> obtenerPublicaciones() async {
@@ -18,16 +19,46 @@ class PublicacionesService {
     }
   }
 
-  // Dar Me Gusta a una publicación 
-  Future<void> darMeGusta(int idPublicacion, int idUsuario) async {
-    await _supabase.from('likes').insert({
-      'id_publicacion': idPublicacion,
-      'id_usuario': idUsuario,
-    });
+  /// Carga todas las categorías disponibles en la base de datos
+   static Future<List<Map<String, dynamic>>> obtenerCategorias() async {
+    try {
+      final response = await _supabase
+          .from('categorias')
+          .select('id_categoria, nombre_categoria')
+          .order('id_categoria', ascending: true);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      throw Exception('Error al obtener categorías: $e');
+    }
   }
 
-  // Crear una nueva publicación 
-  Future<void> crearPublicacion(Map<String, dynamic> datosPublicacion) async {
-    await _supabase.from('publicaciones').insert(datosPublicacion);
+  /// Crea una nueva publicación asignada al usuario logueado
+  static Future<void> crearPublicacion({
+    required String titulo,
+    required String descripcion,
+    required String imagenUrl,
+    required int idCategoria,
+  }) async {
+    try {
+      final usuario = await SessionService.getUsuario();
+      final idUsuario = usuario?['id_usuario'];
+
+      if (idUsuario == null) {
+        throw Exception('No se encontró una sesión activa de usuario.');
+      }
+
+      await _supabase.from('publicaciones').insert({
+        'titulo': titulo,
+        'descripcion': descripcion,
+        'contenido': imagenUrl,
+        'id_categoria': idCategoria,
+        'id_usuario_artista': idUsuario,
+        'estado': true,
+        'fecha_publicacion': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      throw Exception('Error al registrar la publicación: $e');
+    }
   }
 }

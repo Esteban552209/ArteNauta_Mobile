@@ -6,6 +6,7 @@ import '../widgets/app_header.dart';
 import '../widgets/app_menu.dart';
 import '../widgets/gradient_header.dart';
 import '../widgets/notificaciones/notificaciones_panel.dart';
+import '../widgets/publicaciones/crear_publicacion_modal.dart';
 import '../screens/perfil_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/conversaciones_screen.dart';
@@ -30,7 +31,6 @@ class _TestArtistaScreenState extends State<TestArtistaScreen> {
 
   Future<void> _cargar() async {
     final u = await SessionService.getUsuario();
-    // ← usa contarNuevas() en vez de filtrar por 'leida'
     final count = await NotificacionesService.contarNuevas();
 
     setState(() {
@@ -50,16 +50,29 @@ class _TestArtistaScreenState extends State<TestArtistaScreen> {
 
   void _cerrarMenu() => setState(() => _menuAbierto = false);
 
-  // ← al abrir notificaciones resetea el badge
   Future<void> _abrirNotificaciones() async {
     _cerrarMenu();
     await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const NotificacionesPanel()),
     );
-    // Cuando regresa del panel, recarga el conteo (ya marcó como vistas)
     final count = await NotificacionesService.contarNuevas();
     setState(() => _notifCount = count);
+  }
+
+  // Muestra el Modal de Nueva Publicación
+  void _abrirModalPublicar() async {
+    _cerrarMenu();
+    final resultado = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const CrearPublicacionModal(),
+    );
+
+    if (resultado == true) {
+      _cargar();
+    }
   }
 
   @override
@@ -114,10 +127,8 @@ class _TestArtistaScreenState extends State<TestArtistaScreen> {
                       right: 16,
                       child: AppMenu(
                         idRol: idRol,
-                        notifCount: _notifCount, // ← badge
-                        onNuevaPublicacion: () {
-                          _cerrarMenu();
-                        },
+                        notifCount: _notifCount,
+                        onNuevaPublicacion: _abrirModalPublicar,
                         onMiPerfil: () {
                           _cerrarMenu();
                           Navigator.push(
@@ -136,7 +147,7 @@ class _TestArtistaScreenState extends State<TestArtistaScreen> {
                             ),
                           );
                         },
-                        onNotificaciones: _abrirNotificaciones, // ← nuevo
+                        onNotificaciones: _abrirNotificaciones,
                         onCerrarSesion: _cerrarSesion,
                       ),
                     ),
