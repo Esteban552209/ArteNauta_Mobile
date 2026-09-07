@@ -69,9 +69,6 @@ class ComentarioItem extends StatelessWidget {
             CrossAxisAlignment.start,
 
         children: [
-          // ======================================================
-          // AVATAR
-          // ======================================================
 
           const CircleAvatar(
             radius: 20,
@@ -86,10 +83,6 @@ class ComentarioItem extends StatelessWidget {
           ),
 
           const SizedBox(width: 10),
-
-          // ======================================================
-          // INFORMACIÓN
-          // ======================================================
 
           Expanded(
             child: Column(

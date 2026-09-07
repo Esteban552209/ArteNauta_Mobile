@@ -3,9 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class ReaccionesService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
-  // ============================================================
-  // DAR LIKE
-  // ============================================================
+  // Path: subir like a una publicacion
 
   Future<void> darMeGusta({
     required int idPublicacion,
@@ -53,9 +51,7 @@ class ReaccionesService {
     }
   }
 
-  // ============================================================
-  // QUITAR LIKE
-  // ============================================================
+  // Delete. Eliminar el like de una publicacion
 
   Future<void> quitarMeGusta({
     required int idPublicacion,
@@ -73,9 +69,7 @@ class ReaccionesService {
     }
   }
 
-  // ============================================================
-  // COMPROBAR SI EL USUARIO YA DIO LIKE
-  // ============================================================
+  // verificar si un usuario dio like a una publicacion
 
   Future<bool> usuarioDioMeGusta({
     required int idPublicacion,
@@ -96,9 +90,7 @@ class ReaccionesService {
     }
   }
 
-  // ============================================================
-  // OBTENER CANTIDAD DE LIKES
-  // ============================================================
+  // contar el total de likes por publicacion
 
   Future<int> obtenerCantidadLikes({
     required int idPublicacion,

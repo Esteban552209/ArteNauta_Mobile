@@ -86,10 +86,6 @@ class _ComentarioInputState
             CrossAxisAlignment.end,
 
         children: [
-          // ======================================================
-          // TEXTFIELD
-          // ======================================================
-
           Expanded(
             child: TextField(
               controller:
@@ -135,10 +131,6 @@ class _ComentarioInputState
           ),
 
           const SizedBox(width: 8),
-
-          // ======================================================
-          // ENVIAR
-          // ======================================================
 
           Container(
             decoration:
