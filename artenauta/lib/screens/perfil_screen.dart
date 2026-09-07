@@ -142,7 +142,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
           .select('id_usuario')
           .eq('id_rol', 3);
 
-      if (admins != null && (admins as List).isNotEmpty) {
+      if ((admins as List).isNotEmpty) {
         final notifs = admins.map((a) => {
           'id_usuario': a['id_usuario'],
           'asunto': '${_usuario?['nombre']} quiere ser artista',

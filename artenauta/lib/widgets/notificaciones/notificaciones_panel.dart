@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../core/theme/app_theme.dart';
-import '../services/notificaciones_service.dart';
-import '../services/session_service.dart';
+import '../../core/theme/app_theme.dart';
+import '../../services/notificaciones_service.dart';
+import '../../services/session_service.dart';
 
 class NotificacionesPanel extends StatefulWidget {
   const NotificacionesPanel({super.key});
@@ -42,13 +42,15 @@ class _NotificacionesPanelState extends State<NotificacionesPanel> {
   }
 
   String _tiempoRelativo(String? fecha) {
-    if (fecha == null) return '';
-    final diff = DateTime.now().difference(DateTime.parse(fecha));
-    if (diff.inMinutes < 1) return 'Ahora';
-    if (diff.inMinutes < 60) return 'Hace ${diff.inMinutes} min';
-    if (diff.inHours < 24) return 'Hace ${diff.inHours}h';
-    return 'Hace ${diff.inDays}d';
-  }
+  if (fecha == null) return '';
+  final fechaLocal = DateTime.parse(fecha).toLocal();
+  final ahora = DateTime.now();
+  final diff = ahora.difference(fechaLocal);
+  if (diff.inMinutes < 1) return 'Ahora';
+  if (diff.inMinutes < 60) return 'Hace ${diff.inMinutes} min';
+  if (diff.inHours < 24) return 'Hace ${diff.inHours}h';
+  return 'Hace ${diff.inDays}d';
+}
 
   IconData _iconoPorTipo(String? tipo) {
     switch (tipo) {
