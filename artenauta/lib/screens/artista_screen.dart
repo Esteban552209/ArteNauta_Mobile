@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../services/session_service.dart';
+import '../services/publicaciones_service.dart';
 import '../services/notificaciones_service.dart';
 import '../widgets/app_header.dart';
 import '../widgets/app_menu.dart';
 import '../widgets/gradient_header.dart';
 import '../widgets/notificaciones/notificaciones_panel.dart';
+import '../widgets/publicaciones/publicacion_card.dart';
 import '../widgets/publicaciones/crear_publicacion_modal.dart';
 import '../screens/perfil_screen.dart';
 import '../screens/login_screen.dart';
@@ -19,6 +21,8 @@ class TestArtistaScreen extends StatefulWidget {
 }
 
 class _TestArtistaScreenState extends State<TestArtistaScreen> {
+  final PublicacionesService _publicacionesService = PublicacionesService();
+
   Map<String, dynamic>? _usuario;
   bool _menuAbierto = false;
   int _notifCount = 0;
@@ -26,17 +30,55 @@ class _TestArtistaScreenState extends State<TestArtistaScreen> {
   @override
   void initState() {
     super.initState();
-    _cargar();
+    _cargarDatos();
   }
 
-  Future<void> _cargar() async {
-    final u = await SessionService.getUsuario();
-    final count = await NotificacionesService.contarNuevas();
+  Future<void> _cargarDatos() async {
+    try {
+      final usuario = await SessionService.getUsuario();
+      final count = await NotificacionesService.contarNuevas();
 
-    setState(() {
-      _usuario = u;
-      _notifCount = count;
-    });
+      if (!mounted) return;
+
+      setState(() {
+        _usuario = usuario;
+        _notifCount = count;
+      });
+    } catch (e) {
+      debugPrint('Error cargando datos del artista: $e');
+    }
+  }
+
+  Future<void> _abrirModalPublicar() async {
+    _cerrarMenu();
+    final creoPublicacion = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const CrearPublicacionModal(),
+    );
+
+
+    if (creoPublicacion == true) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _abrirNotificaciones() async {
+    _cerrarMenu();
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const NotificacionesPanel()),
+    );
+
+    try {
+      final count = await NotificacionesService.contarNuevas();
+      if (!mounted) return;
+      setState(() => _notifCount = count);
+    } catch (e) {
+      debugPrint('Error actualizando notificaciones: $e');
+    }
   }
 
   Future<void> _cerrarSesion() async {
@@ -48,127 +90,171 @@ class _TestArtistaScreenState extends State<TestArtistaScreen> {
     );
   }
 
-  void _cerrarMenu() => setState(() => _menuAbierto = false);
-
-  Future<void> _abrirNotificaciones() async {
-    _cerrarMenu();
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const NotificacionesPanel()),
-    );
-    final count = await NotificacionesService.contarNuevas();
-    setState(() => _notifCount = count);
-  }
-
-  // Muestra el Modal de Nueva Publicación
-  void _abrirModalPublicar() async {
-    _cerrarMenu();
-    final resultado = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const CrearPublicacionModal(),
-    );
-
-    if (resultado == true) {
-      _cargar();
+  void _cerrarMenu() {
+    if (_menuAbierto) {
+      setState(() => _menuAbierto = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final nombre = _usuario?['nombre'] ?? 'Usuario';
-    final idRol = int.tryParse(_usuario?['id_rol'].toString() ?? '2') ?? 2;
+    final nombre = _usuario?['nombre'] ?? 'Artista';
+    final idRol =
+        int.tryParse(_usuario?['id_rol']?.toString() ?? '2') ?? 2; // Rol 2: Artista
 
     return Scaffold(
-      body: GestureDetector(
-        onTap: () {
-          if (_menuAbierto) _cerrarMenu();
-        },
-        child: Column(
+
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _abrirModalPublicar,
+        backgroundColor: AppTheme.primaryCyan,
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text(
+          'Publicar',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: SafeArea(
+        child: Stack(
           children: [
-            AppHeader(
-              idRol: idRol,
-              nombre: nombre,
-              menuAbierto: _menuAbierto,
-              notifCount: _notifCount,
-              onMenuTap: () => setState(() => _menuAbierto = !_menuAbierto),
-            ),
-
-            Expanded(
-              child: Stack(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Bienvenido, $nombre',
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primaryCyan,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          'Tu espacio creativo en ArteNauta',
-                          style: TextStyle(color: AppTheme.textSecondary),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // MENÚ DESPLEGABLE
-                  if (_menuAbierto)
-                    Positioned(
-                      top: 0,
-                      right: 16,
-                      child: AppMenu(
-                        idRol: idRol,
-                        notifCount: _notifCount,
-                        onNuevaPublicacion: _abrirModalPublicar,
-                        onMiPerfil: () {
-                          _cerrarMenu();
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const PerfilScreen(),
+            Column(
+              children: [
+                AppHeader(
+                  idRol: idRol,
+                  nombre: nombre,
+                  menuAbierto: _menuAbierto,
+                  notifCount: _notifCount,
+                  onMenuTap: () =>
+                      setState(() => _menuAbierto = !_menuAbierto),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Bienvenido, $nombre',
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.primaryCyan,
+                              ),
                             ),
-                          );
-                        },
-                        onConversaciones: () {
-                          _cerrarMenu();
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const ConversacionesScreen(),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'Comparte tus obras y explora la comunidad de ArteNauta',
+                              style: TextStyle(color: AppTheme.textSecondary),
                             ),
-                          );
-                        },
-                        onNotificaciones: _abrirNotificaciones,
-                        onCerrarSesion: _cerrarSesion,
+                          ],
+                        ),
                       ),
-                    ),
-                ],
-              ),
-            ),
-
-            // FOOTER
-            const GradientHeader(
-              height: 50,
-              child: Center(
-                child: Text(
-                  '©2026 ArteNauta',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
+                      Expanded(
+                        child: FutureBuilder<List<Map<String, dynamic>>>(
+                          future: _publicacionesService.obtenerPublicaciones(),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                child: CircularProgressIndicator(
+                                  color: AppTheme.primaryCyan,
+                                ),
+                              );
+                            }
+                            if (snapshot.hasError) {
+                              return Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Text(
+                                    'Error al cargar publicaciones:\n${snapshot.error}',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                              );
+                            }
+                            final publicaciones = snapshot.data ?? [];
+                            if (publicaciones.isEmpty) {
+                              return const Center(
+                                child: Text(
+                                  'No hay publicaciones disponibles por el momento.',
+                                ),
+                              );
+                            }
+                            return RefreshIndicator(
+                              onRefresh: () async {
+                                setState(() {});
+                              },
+                              child: ListView.builder(
+                                padding: const EdgeInsets.all(12.0),
+                                itemCount: publicaciones.length,
+                                itemBuilder: (context, index) {
+                                  return PublicacionCard(
+                                    publicacion: publicaciones[index],
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
+                const GradientHeader(
+                  height: 40,
+                  child: Center(
+                    child: Text(
+                      '©2026 ArteNauta',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
+
+            if (_menuAbierto)
+              Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: _cerrarMenu,
+                ),
+              ),
+
+            if (_menuAbierto)
+              Positioned(
+                top: 0,
+                right: 16,
+                child: AppMenu(
+                  idRol: idRol,
+                  notifCount: _notifCount,
+                  onNuevaPublicacion: _abrirModalPublicar,
+                  onMiPerfil: () {
+                    _cerrarMenu();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const PerfilScreen()),
+                    );
+                  },
+                  onConversaciones: () {
+                    _cerrarMenu();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ConversacionesScreen(),
+                      ),
+                    );
+                  },
+                  onNotificaciones: _abrirNotificaciones,
+                  onCerrarSesion: _cerrarSesion,
+                ),
+              ),
           ],
         ),
       ),

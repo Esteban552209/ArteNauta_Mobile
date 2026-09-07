@@ -61,4 +61,37 @@ class PublicacionesService {
       throw Exception('Error al registrar la publicación: $e');
     }
   }
+
+  /// Obtener publicaciones creadas por un usuario específico
+  static Future<List<Map<String, dynamic>>> getPublicacionesPorUsuario(int idUsuario) async {
+    final response = await _supabase
+        .from('publicaciones')
+        .select('*, categorias(nombre_categoria)') // Si tienes relación con categorías
+        .eq('id_usuario', idUsuario)
+        .order('fecha_publicacion', ascending: false);
+
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  /// Editar información de una publicación
+  static Future<void> editarPublicacion({
+    required int idPublicacion,
+    required String titulo,
+    required String descripcion,
+    double? precio,
+  }) async {
+    await _supabase.from('publicaciones').update({
+      'titulo': titulo,
+      'descripcion': descripcion,
+      if (precio != null) 'precio': precio,
+    }).eq('id_publicacion', idPublicacion);
+  }
+
+  /// Eliminar una publicación
+  static Future<void> eliminarPublicacion(int idPublicacion) async {
+    await _supabase
+        .from('publicaciones')
+        .delete()
+        .eq('id_publicacion', idPublicacion);
+  }
 }
