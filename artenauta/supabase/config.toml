@@ -1,11 +1,20 @@
-
 [functions.gestion_usuarios]
 enabled = true
 verify_jwt = false
 import_map = "./functions/gestion_usuarios/deno.json"
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
 entrypoint = "./functions/gestion_usuarios/index.ts"
-# Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
-# static_files = [ "./functions/gestion_usuarios/*.html" ]
+
+[functions.gestion_categorias]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/gestion_categorias/index.ts"
+
+[functions.gestion_publicaciones]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/gestion_publicaciones/index.ts"
+
+[functions.gestion_comentarios]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/gestion_comentarios/index.ts"

@@ -3,7 +3,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../services/session_service.dart';
 import '../screens/login_screen.dart';
 import '../screens/admin/gestion_usuarios_screen.dart';
-
+import '../screens/admin/gestion_categorias_screen.dart';
+import '../screens/admin/gestion_publicaciones_screen.dart';
+import '../screens/admin/gestion_comentarios_screen.dart';
 class AdminDrawer extends StatelessWidget {
   const AdminDrawer({super.key});
 
@@ -56,14 +58,34 @@ class AdminDrawer extends StatelessWidget {
             },
           ),
           _buildMenuItem(
+            title: 'Categorías',
+            svgPath: 'assets/icons/publicaciones.svg', // Assuming we don't have a categories icon, reusing one or using default
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const GestionCategoriasScreen()),
+              );
+            },
+          ),
+          _buildMenuItem(
             title: 'Publicaciones',
             svgPath: 'assets/icons/publicaciones.svg',
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const GestionPublicacionesScreen()),
+              );
+            },
           ),
           _buildMenuItem(
             title: 'Comentarios',
             svgPath: 'assets/icons/comentarios.svg',
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const GestionComentariosScreen()),
+              );
+            },
           ),
           
           const Divider(color: Colors.white54),
