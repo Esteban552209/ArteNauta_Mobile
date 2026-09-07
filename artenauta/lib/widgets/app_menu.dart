@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
-import '../services/notificaciones_service.dart';
 import 'package:art_sweetalert_new/art_sweetalert_new.dart';
 
 class AppMenu extends StatelessWidget {
