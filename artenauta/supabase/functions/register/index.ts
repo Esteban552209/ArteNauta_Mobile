@@ -36,7 +36,7 @@ serve(async (req) => {
           telefono: telefono,
           email: email,
           clave: hashedPassword,
-          id_rol: id_rol
+          id_rol: 1
         }
       ]);
 

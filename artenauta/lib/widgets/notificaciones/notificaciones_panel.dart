@@ -31,6 +31,9 @@ class _NotificacionesPanelState extends State<NotificacionesPanel> {
         ? await NotificacionesService.getSolicitudes()
         : <Map<String, dynamic>>[];
 
+    // Marca como vistas al abrir el panel
+    await NotificacionesService.marcarComoVistas();
+
     setState(() {
       _notificaciones = notifs;
       _solicitudes = sols;
@@ -39,13 +42,15 @@ class _NotificacionesPanelState extends State<NotificacionesPanel> {
   }
 
   String _tiempoRelativo(String? fecha) {
-    if (fecha == null) return '';
-    final diff = DateTime.now().difference(DateTime.parse(fecha));
-    if (diff.inMinutes < 1) return 'Ahora';
-    if (diff.inMinutes < 60) return 'Hace ${diff.inMinutes} min';
-    if (diff.inHours < 24) return 'Hace ${diff.inHours}h';
-    return 'Hace ${diff.inDays}d';
-  }
+  if (fecha == null) return '';
+  final fechaLocal = DateTime.parse(fecha).toLocal();
+  final ahora = DateTime.now();
+  final diff = ahora.difference(fechaLocal);
+  if (diff.inMinutes < 1) return 'Ahora';
+  if (diff.inMinutes < 60) return 'Hace ${diff.inMinutes} min';
+  if (diff.inHours < 24) return 'Hace ${diff.inHours}h';
+  return 'Hace ${diff.inDays}d';
+}
 
   IconData _iconoPorTipo(String? tipo) {
     switch (tipo) {

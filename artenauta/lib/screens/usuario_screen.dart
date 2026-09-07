@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
-
 import '../core/theme/app_theme.dart';
 import '../services/session_service.dart';
 import '../services/publicaciones_service.dart';
-
+import '../services/notificaciones_service.dart';
 import '../widgets/app_header.dart';
 import '../widgets/app_menu.dart';
 import '../widgets/gradient_header.dart';
-
+import '../widgets/notificaciones/notificaciones_panel.dart';
 import '../widgets/publicaciones/publicacion_card.dart';
-
-import 'perfil_screen.dart';
-import 'login_screen.dart';
+import '../screens/perfil_screen.dart';
+import '../screens/login_screen.dart';
+import '../screens/conversaciones_screen.dart';
 
 class UsuarioScreen extends StatefulWidget {
   const UsuarioScreen({super.key});
@@ -21,264 +20,221 @@ class UsuarioScreen extends StatefulWidget {
 }
 
 class _UsuarioScreenState extends State<UsuarioScreen> {
-  final PublicacionesService _publicacionesService =
-      PublicacionesService();
+  final PublicacionesService _publicacionesService = PublicacionesService();
 
   Map<String, dynamic>? _usuario;
-
-  List<Map<String, dynamic>> _publicaciones = [];
-
-  bool _cargando = true;
-
   bool _menuAbierto = false;
+  int _notifCount = 0;
 
   @override
   void initState() {
     super.initState();
-
     _cargarDatos();
   }
 
   // ============================================================
-  // CARGAR USUARIO Y PUBLICACIONES
+  // CARGAR USUARIO Y NOTIFICACIONES
   // ============================================================
 
   Future<void> _cargarDatos() async {
     try {
       final usuario = await SessionService.getUsuario();
-
-      final publicaciones =
-          await _publicacionesService.obtenerPublicaciones();
+      final count = await NotificacionesService.contarNuevas();
 
       if (!mounted) return;
 
       setState(() {
         _usuario = usuario;
-        _publicaciones = publicaciones;
-        _cargando = false;
+        _notifCount = count;
       });
     } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _cargando = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Error al cargar los datos: $e',
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
+      debugPrint('Error cargando datos del usuario: $e');
     }
   }
 
-  // ============================================================
-  // CERRAR SESIÓN
-  // ============================================================
+  Future<void> _abrirNotificaciones() async {
+    _cerrarMenu();
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const NotificacionesPanel()),
+    );
+
+    try {
+      final count = await NotificacionesService.contarNuevas();
+      if (!mounted) return;
+      setState(() => _notifCount = count);
+    } catch (e) {
+      debugPrint('Error actualizando notificaciones: $e');
+    }
+  }
 
   Future<void> _cerrarSesion() async {
     await SessionService.cerrarSesion();
-
     if (!mounted) return;
-
-    Navigator.pushAndRemoveUntil(
+    Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (_) => const LoginScreen(),
-      ),
-      (route) => false,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
     );
   }
 
-  // ============================================================
-  // BUILD
-  // ============================================================
+  void _cerrarMenu() {
+    if (_menuAbierto) {
+      setState(() => _menuAbierto = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final nombre = _usuario?['nombre'] ?? 'Usuario';
-
     final idRol =
-        int.tryParse(
-          _usuario?['id_rol']?.toString() ?? '1',
-        ) ??
-        1;
+        int.tryParse(_usuario?['id_rol']?.toString() ?? '1') ?? 1;
 
     return Scaffold(
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            // ======================================================
-            // HEADER
-            // ======================================================
-
-            AppHeader(
-              idRol: idRol,
-              nombre: nombre,
-              menuAbierto: _menuAbierto,
-              onMenuTap: () {
-                setState(() {
-                  _menuAbierto = !_menuAbierto;
-                });
-              },
-            ),
-
-            // ======================================================
-            // CONTENIDO
-            // ======================================================
-
-            Expanded(
-              child: Stack(
-                children: [
-                  Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
+            // CONTENIDO NORMAL (header, feed, footer)
+            Column(
+              children: [
+                AppHeader(
+                  idRol: idRol,
+                  nombre: nombre,
+                  menuAbierto: _menuAbierto,
+                  notifCount: _notifCount,
+                  onMenuTap: () =>
+                      setState(() => _menuAbierto = !_menuAbierto),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ------------------------------------------------
-                      // BIENVENIDA
-                      // ------------------------------------------------
-
                       Padding(
-                        padding:
-                            const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(16.0),
                         child: Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               'Bienvenido, $nombre',
                               style: const TextStyle(
                                 fontSize: 22,
-                                fontWeight:
-                                    FontWeight.bold,
-                                color:
-                                    AppTheme.primaryCyan,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.primaryCyan,
                               ),
                             ),
-
                             const SizedBox(height: 4),
-
                             const Text(
                               'Explora y descubre arte en ArteNauta',
-                              style: TextStyle(
-                                color:
-                                    AppTheme.textSecondary,
-                              ),
+                              style: TextStyle(color: AppTheme.textSecondary),
                             ),
                           ],
                         ),
                       ),
-
-                      // ------------------------------------------------
-                      // PUBLICACIONES
-                      // ------------------------------------------------
-
                       Expanded(
-                        child: _cargando
-                            ? const Center(
-                                child:
-                                    CircularProgressIndicator(
-                                  color:
-                                      AppTheme.primaryCyan,
+                        child: FutureBuilder<List<Map<String, dynamic>>>(
+                          future: _publicacionesService.obtenerPublicaciones(),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                child: CircularProgressIndicator(
+                                  color: AppTheme.primaryCyan,
                                 ),
-                              )
-                            : _publicaciones.isEmpty
-                                ? const Center(
-                                    child: Text(
-                                      'No hay publicaciones disponibles.',
-                                    ),
-                                  )
-                                : RefreshIndicator(
-                                    color:
-                                        AppTheme.primaryCyan,
-                                    onRefresh:
-                                        _cargarDatos,
-                                    child:
-                                        ListView.builder(
-                                      padding:
-                                          const EdgeInsets.all(
-                                        12,
-                                      ),
-                                      itemCount:
-                                          _publicaciones.length,
-                                      itemBuilder:
-                                          (context, index) {
-                                        return PublicacionCard(
-                                          publicacion:
-                                              _publicaciones[
-                                                  index],
-                                        );
-                                      },
-                                    ),
+                              );
+                            }
+                            if (snapshot.hasError) {
+                              return Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Text(
+                                    'Error al cargar publicaciones:\n${snapshot.error}',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(color: Colors.red),
                                   ),
+                                ),
+                              );
+                            }
+                            final publicaciones = snapshot.data ?? [];
+                            if (publicaciones.isEmpty) {
+                              return const Center(
+                                child: Text(
+                                  'No hay publicaciones disponibles por el momento.',
+                                ),
+                              );
+                            }
+                            return RefreshIndicator(
+                              onRefresh: () async {
+                                setState(() {});
+                              },
+                              child: ListView.builder(
+                                padding: const EdgeInsets.all(12.0),
+                                itemCount: publicaciones.length,
+                                itemBuilder: (context, index) {
+                                  return PublicacionCard(
+                                    publicacion: publicaciones[index],
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     ],
                   ),
-
-                  // ==================================================
-                  // MENÚ
-                  // ==================================================
-
-                  if (_menuAbierto)
-                    Positioned(
-                      top: 0,
-                      right: 16,
-                      child: AppMenu(
-                        idRol: idRol,
-
-                        onMiPerfil: () {
-                          setState(() {
-                            _menuAbierto = false;
-                          });
-
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  const PerfilScreen(),
-                            ),
-                          );
-                        },
-
-                        onConversaciones: () {
-                          setState(() {
-                            _menuAbierto = false;
-                          });
-                        },
-
-                        onNotificaciones: () {
-                          setState(() {
-                            _menuAbierto = false;
-                          });
-                        },
-
-                        onCerrarSesion:
-                            _cerrarSesion,
+                ),
+                const GradientHeader(
+                  height: 40,
+                  child: Center(
+                    child: Text(
+                      '©2026 ArteNauta',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
                       ),
                     ),
-                ],
-              ),
-            ),
-
-            // ======================================================
-            // FOOTER
-            // ======================================================
-
-            const GradientHeader(
-              height: 40,
-              child: Center(
-                child: Text(
-                  '©2026 ArteNauta',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
                   ),
                 ),
-              ),
+              ],
             ),
+
+            // BARRERA INVISIBLE: cierra el menú al tocar fuera de él
+            if (_menuAbierto)
+              Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: _cerrarMenu,
+                ),
+              ),
+
+            // MENÚ (va DESPUÉS de la barrera → queda encima y recibe el tap primero)
+            if (_menuAbierto)
+              Positioned(
+                top: 0,
+                right: 16,
+                child: AppMenu(
+                  idRol: idRol,
+                  notifCount: _notifCount,
+                  onMiPerfil: () {
+                    _cerrarMenu();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const PerfilScreen()),
+                    );
+                  },
+                  onConversaciones: () {
+                    _cerrarMenu();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ConversacionesScreen(),
+                      ),
+                    );
+                  },
+                  onNotificaciones: _abrirNotificaciones,
+                  onCerrarSesion: _cerrarSesion,
+                ),
+              ),
           ],
         ),
       ),

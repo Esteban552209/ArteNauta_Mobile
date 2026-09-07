@@ -1,0 +1,20 @@
+[functions.gestion_usuarios]
+enabled = true
+verify_jwt = false
+import_map = "./functions/gestion_usuarios/deno.json"
+entrypoint = "./functions/gestion_usuarios/index.ts"
+
+[functions.gestion_categorias]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/gestion_categorias/index.ts"
+
+[functions.gestion_publicaciones]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/gestion_publicaciones/index.ts"
+
+[functions.gestion_comentarios]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/gestion_comentarios/index.ts"

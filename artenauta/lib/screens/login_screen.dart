@@ -84,9 +84,9 @@ class _LoginScreenState extends State<LoginScreen> {
       onPressed: () {
         Navigator.pop(context);
       },
-      child: const Text('Entendido'),
       backgroundColor: AppTheme.primaryCyan,
       textColor: Colors.white,
+      child: const Text('Entendido'),
     ),
   ],
 );

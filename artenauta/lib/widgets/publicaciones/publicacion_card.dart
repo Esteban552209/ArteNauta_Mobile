@@ -90,7 +90,7 @@ class PublicacionCard extends StatelessWidget {
               fit: BoxFit.cover,
 
               errorBuilder:
-                  (_, __, ___) {
+                  (_, _, _) {
                 return const SizedBox.shrink();
               },
             ),
