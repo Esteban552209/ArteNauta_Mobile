@@ -32,10 +32,6 @@ class _UsuarioScreenState extends State<UsuarioScreen> {
     _cargarDatos();
   }
 
-  // ============================================================
-  // CARGAR USUARIO Y NOTIFICACIONES
-  // ============================================================
-
   Future<void> _cargarDatos() async {
     try {
       final usuario = await SessionService.getUsuario();
