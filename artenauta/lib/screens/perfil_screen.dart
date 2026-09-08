@@ -146,7 +146,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
         final notifs = admins.map((a) => {
           'id_usuario': a['id_usuario'],
           'asunto': '${_usuario?['nombre']} quiere ser artista',
-          'tipo_notificacion': 'nueva_solicitud_artista',
+          'tipo_notificacion': 'Informativo',
           'fecha_notificacion': DateTime.now().toIso8601String(),
         }).toList();
         await _supabase.from('notificaciones').insert(notifs);
