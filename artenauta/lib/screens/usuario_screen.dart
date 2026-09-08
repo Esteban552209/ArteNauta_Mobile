@@ -31,6 +31,8 @@ class _UsuarioScreenState extends State<UsuarioScreen> {
     super.initState();
     _cargarDatos();
   }
+  // CARGAR USUARIO Y NOTIFICACIONES
+
 
   Future<void> _cargarDatos() async {
     try {

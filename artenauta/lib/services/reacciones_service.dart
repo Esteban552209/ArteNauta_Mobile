@@ -16,7 +16,6 @@ class ReaccionesService {
         'id_publicacion': idPublicacion,
       });
 
-      // ── Notificar al artista ──────────────────────────────
       // 1. Obtener id_usuario_artista de la publicación
       final pub = await _supabase
           .from('publicaciones')

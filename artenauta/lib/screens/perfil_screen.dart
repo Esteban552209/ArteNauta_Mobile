@@ -129,7 +129,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    // Tarjeta con la información personal
+                    // Tarjeta con la información personal y edición de datos
                     PerfilInfoCard(
                       usuario: _usuario,
                       nombreController: _nombreCtrl,
@@ -140,7 +140,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
                     const SizedBox(height: 16),
 
-                    // publicaciones
+                    // Tarjeta de navegación a la pantalla de publicaciones
                     Card(
                       elevation: 2,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -169,7 +169,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
                     const SizedBox(height: 16),
 
-                    // Solicitud para ser Artista 
+                    // Tarjeta de Solicitud para ser Artista (Solo Rol 1)
                     if (idRol == 1)
                       PerfilSolicitudCard(usuario: _usuario),
                   ],
