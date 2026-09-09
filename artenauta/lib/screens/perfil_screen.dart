@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/theme/app_theme.dart';
 import '../widgets/gradient_header.dart';
 import '../services/session_service.dart';
+import '../services/perfil_service.dart'; // ← nuevo import
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
@@ -22,7 +22,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
   final _apellidoController = TextEditingController();
   final _telefonoController = TextEditingController();
 
-  final _supabase = Supabase.instance.client;
+  // ← ya no tiene _supabase
 
   @override
   void initState() {
@@ -42,62 +42,60 @@ class _PerfilScreenState extends State<PerfilScreen> {
   }
 
   Future<void> _guardarCambios() async {
-  final idUsuarioRaw = _usuario?['id_usuario'];
-  final idUsuario = int.tryParse(idUsuarioRaw.toString());
+    final idUsuarioRaw = _usuario?['id_usuario'];
+    final idUsuario = int.tryParse(idUsuarioRaw.toString());
+    if (idUsuario == null) return;
 
-  if (idUsuario == null) return;
+    final telefonoRaw = _telefonoController.text.trim();
+    final telefono = telefonoRaw.isEmpty ? null : int.tryParse(telefonoRaw);
 
-  // Teléfono puede ser null si está vacío — Supabase lo acepta
-  final telefonoRaw = _telefonoController.text.trim();
-  final telefono = telefonoRaw.isEmpty ? null : int.tryParse(telefonoRaw);
+    try {
+      // ← usa el service
+      await PerfilService.actualizarPerfil(
+        idUsuario: idUsuario,
+        nombre: _nombreController.text.trim(),
+        apellido: _apellidoController.text.trim(),
+        telefono: telefono,
+      );
 
-  try {
-    await _supabase
-        .from('usuarios')
-        .update({
-          'nombre': _nombreController.text.trim(),
-          'apellido': _apellidoController.text.trim(),
-          'telefono': telefono, // null si está vacío, número si tiene valor
-        })
-        .eq('id_usuario', idUsuario);
+      final token = await SessionService.getToken();
+      final usuarioActualizado = {
+        ..._usuario!,
+        'nombre': _nombreController.text.trim(),
+        'apellido': _apellidoController.text.trim(),
+        'telefono': telefono,
+      };
+      await SessionService.guardar(
+        token: token ?? '',
+        usuario: usuarioActualizado,
+      );
 
-    final token = await SessionService.getToken();
-    final usuarioActualizado = {
-      ..._usuario!,
-      'nombre': _nombreController.text.trim(),
-      'apellido': _apellidoController.text.trim(),
-      'telefono': telefono,
-    };
-    await SessionService.guardar(
-      token: token ?? '',
-      usuario: usuarioActualizado,
-    );
+      setState(() {
+        _usuario = usuarioActualizado;
+        _editando = false;
+      });
 
-    setState(() {
-      _usuario = usuarioActualizado;
-      _editando = false;
-    });
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Perfil actualizado correctamente'),
-        backgroundColor: Colors.green,
-      ),
-    );
-  } catch (e) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Error: $e'),
-        backgroundColor: Colors.red,
-      ),
-    );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Perfil actualizado correctamente'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
-}
 
   Future<void> _enviarSolicitud() async {
     setState(() => _enviandoSolicitud = true);
+
     final idUsuarioRaw = _usuario?['id_usuario'];
     final idUsuario = int.tryParse(idUsuarioRaw.toString());
 
@@ -107,16 +105,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
     }
 
     try {
-      // 1. Verificar si ya tiene solicitud pendiente
-      final existente = await _supabase
-          .from('solicitudes')
-          .select('id_solicitud')
-          .eq('id_usuario', idUsuario)
-          .eq('tipo_solicitud', 'artista')
-          .eq('estado_solicitud', 'Pendiente')
-          .maybeSingle();
+      // ← usa el service
+      final pendiente = await PerfilService.tieneSolicitudPendiente(idUsuario);
 
-      if (existente != null) {
+      if (pendiente) {
         setState(() => _enviandoSolicitud = false);
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -128,29 +120,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
         return;
       }
 
-      // 2. Crear la solicitud
-      await _supabase.from('solicitudes').insert({
-        'id_usuario': idUsuario,
-        'tipo_solicitud': 'artista',
-        'estado_solicitud': 'Pendiente',
-        'fecha_solicitud': DateTime.now().toIso8601String(),
-      });
-
-      // 3. Notificar a todos los admins
-      final admins = await _supabase
-          .from('usuarios')
-          .select('id_usuario')
-          .eq('id_rol', 3);
-
-      if ((admins as List).isNotEmpty) {
-        final notifs = admins.map((a) => {
-          'id_usuario': a['id_usuario'],
-          'asunto': '${_usuario?['nombre']} quiere ser artista',
-          'tipo_notificacion': 'Informativo',
-          'fecha_notificacion': DateTime.now().toIso8601String(),
-        }).toList();
-        await _supabase.from('notificaciones').insert(notifs);
-      }
+      await PerfilService.enviarSolicitudArtista(
+        idUsuario: idUsuario,
+        nombreUsuario: _usuario?['nombre'] ?? 'Usuario',
+      );
 
       setState(() {
         _enviandoSolicitud = false;
@@ -225,7 +198,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
     super.dispose();
   }
 
-  // Título dinámico según rol
   String _tituloPanel(int rol) {
     switch (rol) {
       case 3: return 'Panel Admin';
@@ -244,16 +216,13 @@ class _PerfilScreenState extends State<PerfilScreen> {
     final nombre = _usuario?['nombre'] ?? 'Usuario';
     final apellido = _usuario?['apellido'] ?? '';
     final email = _usuario?['email'] ?? '';
-    final idRol =
-        int.tryParse(_usuario?['id_rol'].toString() ?? '1') ?? 1;
-    final inicial =
-        nombre.isNotEmpty ? nombre[0].toUpperCase() : 'U';
+    final idRol = int.tryParse(_usuario?['id_rol'].toString() ?? '1') ?? 1;
+    final inicial = nombre.isNotEmpty ? nombre[0].toUpperCase() : 'U';
 
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            // HEADER — dinámico según rol
             GradientHeader(
               height: 100,
               child: Padding(
@@ -270,19 +239,15 @@ class _PerfilScreenState extends State<PerfilScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              _tituloPanel(idRol),
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13),
-                            ),
-                            Text(
-                              'Bienvenido, $nombre',
-                              style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 11),
-                            ),
+                            Text(_tituloPanel(idRol),
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13)),
+                            Text('Bienvenido, $nombre',
+                                style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 11)),
                           ],
                         ),
                       ],
@@ -297,13 +262,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
               ),
             ),
 
-            // CONTENIDO
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    // TARJETA PERFIL
                     Card(
                       elevation: 2,
                       shape: RoundedRectangleBorder(
@@ -316,33 +279,26 @@ class _PerfilScreenState extends State<PerfilScreen> {
                               radius: 40,
                               backgroundColor: AppTheme.primaryCyan
                                   .withValues(alpha: 0.15),
-                              child: Text(
-                                inicial,
-                                style: const TextStyle(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.primaryCyan),
-                              ),
+                              child: Text(inicial,
+                                  style: const TextStyle(
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppTheme.primaryCyan)),
                             ),
                             const SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.center,
-                              children: const [
+                            const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
                                 _Stat(valor: '0', label: 'Obras'),
                                 SizedBox(width: 32),
-                                _Stat(
-                                    valor: '0',
-                                    label: 'Seguidores'),
+                                _Stat(valor: '0', label: 'Seguidores'),
                               ],
                             ),
                             const SizedBox(height: 12),
-                            Text(
-                              '$nombre $apellido',
-                              style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold),
-                            ),
+                            Text('$nombre $apellido',
+                                style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold)),
                             const SizedBox(height: 4),
                             Text(email,
                                 style: const TextStyle(
@@ -352,11 +308,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton(
-                                onPressed: () => setState(
-                                    () => _editando = !_editando),
+                                onPressed: () =>
+                                    setState(() => _editando = !_editando),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                      AppTheme.primaryCyan,
+                                  backgroundColor: AppTheme.primaryCyan,
                                   foregroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(
                                       borderRadius:
@@ -374,7 +329,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
                     const SizedBox(height: 16),
 
-                    // FORMULARIO EDICIÓN
                     if (_editando)
                       Card(
                         elevation: 2,
@@ -383,8 +337,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         child: Padding(
                           padding: const EdgeInsets.all(20),
                           child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text('Editar información',
                                   style: TextStyle(
@@ -416,16 +369,13 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                 child: ElevatedButton(
                                   onPressed: _guardarCambios,
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        AppTheme.primaryCyan,
+                                    backgroundColor: AppTheme.primaryCyan,
                                     foregroundColor: Colors.white,
                                     shape: RoundedRectangleBorder(
                                         borderRadius:
-                                            BorderRadius.circular(
-                                                10)),
+                                            BorderRadius.circular(10)),
                                   ),
-                                  child: const Text(
-                                      'Guardar cambios'),
+                                  child: const Text('Guardar cambios'),
                                 ),
                               ),
                             ],
@@ -435,7 +385,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
                     const SizedBox(height: 16),
 
-                    // SOLICITAR SER ARTISTA — solo rol 1
                     if (idRol == 1)
                       Card(
                         elevation: 2,
@@ -448,8 +397,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         child: Padding(
                           padding: const EdgeInsets.all(20),
                           child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Row(
                                 children: [
@@ -460,8 +408,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                   Text('¿Quieres ser Artista?',
                                       style: TextStyle(
                                           fontWeight: FontWeight.bold,
-                                          color:
-                                              AppTheme.primaryCyan)),
+                                          color: AppTheme.primaryCyan)),
                                 ],
                               ),
                               const SizedBox(height: 8),
@@ -480,16 +427,12 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                     borderRadius:
                                         BorderRadius.circular(10),
                                     border: Border.all(
-                                        color:
-                                            Colors.green.shade200),
+                                        color: Colors.green.shade200),
                                   ),
                                   child: Row(
                                     children: [
-                                      Icon(
-                                          Icons
-                                              .check_circle_outline,
-                                          color:
-                                              Colors.green.shade600,
+                                      Icon(Icons.check_circle_outline,
+                                          color: Colors.green.shade600,
                                           size: 18),
                                       const SizedBox(width: 8),
                                       const Expanded(
@@ -530,7 +473,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
               ),
             ),
 
-            // FOOTER
             const GradientHeader(
               height: 50,
               child: Center(
