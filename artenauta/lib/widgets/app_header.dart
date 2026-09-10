@@ -2,90 +2,89 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 
 class AppHeader extends StatelessWidget {
-  final int idRol;
-  final String nombre;
-  final bool menuAbierto;
-  final VoidCallback onMenuTap;
+  final String inicial;
+  final int notifCount;
+  final VoidCallback onNotificacionesPressed;
+  final VoidCallback onAvatarPressed;
 
   const AppHeader({
     super.key,
-    required this.idRol,
-    required this.nombre,
-    required this.menuAbierto,
-    required this.onMenuTap, required int notifCount,
+    required this.inicial,
+    required this.notifCount,
+    required this.onNotificacionesPressed,
+    required this.onAvatarPressed,
   });
-
-  String get _tituloPanel {
-    switch (idRol) {
-      case 3: return 'Panel Admin';
-      case 2: return 'Panel Artista';
-      default: return 'Panel Usuario';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 100,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppTheme.darkCyan, AppTheme.primaryCyan],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
             children: [
-              Row(
+              Image.asset(
+                'assets/LOGO.png',
+                height: 90,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(width: 9),
+            ],
+          ),
+          Row(
+            children: [
+              Stack(
                 children: [
-                  Image.asset('assets/LOGO.png', height: 70, fit: BoxFit.contain),
-                  const SizedBox(width: 8),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _tituloPanel,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      Text(
-                        'Bienvenido, $nombre',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
+                  IconButton(
+                    icon: const Icon(
+                      Icons.notifications_none_rounded,
+                      color: Colors.black87,
+                      size: 40,
+                    ),
+                    onPressed: onNotificacionesPressed,
                   ),
+                  if (notifCount > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.redAccent,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          '$notifCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
-              ElevatedButton(
-                onPressed: onMenuTap,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: menuAbierto ? Colors.white : Colors.transparent,
-                  foregroundColor: menuAbierto ? AppTheme.primaryCyan : Colors.white,
-                  elevation: 0,
-                  side: const BorderSide(color: Colors.white, width: 1.5),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+              const SizedBox(width: 4),
+              GestureDetector(
+                onTap: onAvatarPressed,
+                child: CircleAvatar(
+                  radius: 23,
+                  backgroundColor: AppTheme.primaryCyan.withValues(alpha: 0.15),
+                  child: Text(
+                    inicial,
+                    style: const TextStyle(
+                      color: AppTheme.primaryCyan,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 30,
+                    ),
                   ),
-                ),
-                child: const Text(
-                  'Menú',
-                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }

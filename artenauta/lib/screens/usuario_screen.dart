@@ -5,12 +5,9 @@ import '../services/publicaciones_service.dart';
 import '../services/notificaciones_service.dart';
 import '../widgets/app_header.dart';
 import '../widgets/app_menu.dart';
-import '../widgets/gradient_header.dart';
 import '../widgets/notificaciones/notificaciones_panel.dart';
 import '../widgets/publicaciones/publicacion_card.dart';
-import '../screens/perfil_screen.dart';
 import '../screens/login_screen.dart';
-import '../screens/conversaciones_screen.dart';
 
 class UsuarioScreen extends StatefulWidget {
   const UsuarioScreen({super.key});
@@ -23,16 +20,14 @@ class _UsuarioScreenState extends State<UsuarioScreen> {
   final PublicacionesService _publicacionesService = PublicacionesService();
 
   Map<String, dynamic>? _usuario;
-  bool _menuAbierto = false;
   int _notifCount = 0;
+  bool _cargando = true;
 
   @override
   void initState() {
     super.initState();
     _cargarDatos();
   }
-  // CARGAR USUARIO Y NOTIFICACIONES
-
 
   Future<void> _cargarDatos() async {
     try {
@@ -44,20 +39,23 @@ class _UsuarioScreenState extends State<UsuarioScreen> {
       setState(() {
         _usuario = usuario;
         _notifCount = count;
+        _cargando = false;
       });
     } catch (e) {
       debugPrint('Error cargando datos del usuario: $e');
+      if (mounted) setState(() => _cargando = false);
     }
   }
 
   Future<void> _abrirNotificaciones() async {
-    _cerrarMenu();
-
     await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const NotificacionesPanel()),
     );
+    _actualizarNotificaciones();
+  }
 
+  Future<void> _actualizarNotificaciones() async {
     try {
       final count = await NotificacionesService.contarNuevas();
       if (!mounted) return;
@@ -76,165 +74,177 @@ class _UsuarioScreenState extends State<UsuarioScreen> {
     );
   }
 
-  void _cerrarMenu() {
-    if (_menuAbierto) {
-      setState(() => _menuAbierto = false);
-    }
+  void _mostrarMenuOpciones(int idRol) {
+    AppMenu.mostrar(
+      context,
+      idRol: idRol,
+      notifCount: _notifCount,
+      onNotificacionesTap: _abrirNotificaciones,
+      onCerrarSesion: _cerrarSesion,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final nombre = _usuario?['nombre'] ?? 'Usuario';
-    final idRol =
-        int.tryParse(_usuario?['id_rol']?.toString() ?? '1') ?? 1;
+    final idRol = int.tryParse(_usuario?['id_rol']?.toString() ?? '1') ?? 1;
+    final inicial = nombre.isNotEmpty ? nombre[0].toUpperCase() : 'U';
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
       body: SafeArea(
-        child: Stack(
-          children: [
-            // CONTENIDO NORMAL (header, feed, footer)
-            Column(
-              children: [
-                AppHeader(
-                  idRol: idRol,
-                  nombre: nombre,
-                  menuAbierto: _menuAbierto,
+        child: RefreshIndicator(
+          color: AppTheme.primaryCyan,
+          onRefresh: () async {
+            setState(() {});
+            await _cargarDatos();
+          },
+          child: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              // Encabezado modular
+              SliverToBoxAdapter(
+                child: AppHeader(
+                  inicial: inicial,
                   notifCount: _notifCount,
-                  onMenuTap: () =>
-                      setState(() => _menuAbierto = !_menuAbierto),
+                  onNotificacionesPressed: _abrirNotificaciones,
+                  onAvatarPressed: () => _mostrarMenuOpciones(idRol),
                 ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Bienvenido, $nombre',
-                              style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: AppTheme.primaryCyan,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Explora y descubre arte en ArteNauta',
-                              style: TextStyle(color: AppTheme.textSecondary),
-                            ),
-                          ],
+              ),
+
+              // Banner de bienvenida
+              SliverToBoxAdapter(
+                child: _HeaderBienvenidaSection(nombre: nombre),
+              ),
+
+              // Listado de publicaciones
+              FutureBuilder<List<Map<String, dynamic>>>(
+                future: _publicacionesService.obtenerPublicaciones(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting || _cargando) {
+                    return const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                        child: CircularProgressIndicator(color: AppTheme.primaryCyan),
+                      ),
+                    );
+                  }
+
+                  if (snapshot.hasError) {
+                    return SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(
+                            'Error al cargar publicaciones:\n${snapshot.error}',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.redAccent, height: 1.4),
+                          ),
                         ),
                       ),
-                      Expanded(
-                        child: FutureBuilder<List<Map<String, dynamic>>>(
-                          future: _publicacionesService.obtenerPublicaciones(),
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const Center(
-                                child: CircularProgressIndicator(
-                                  color: AppTheme.primaryCyan,
-                                ),
-                              );
-                            }
-                            if (snapshot.hasError) {
-                              return Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(20),
-                                  child: Text(
-                                    'Error al cargar publicaciones:\n${snapshot.error}',
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(color: Colors.red),
-                                  ),
-                                ),
-                              );
-                            }
-                            final publicaciones = snapshot.data ?? [];
-                            if (publicaciones.isEmpty) {
-                              return const Center(
-                                child: Text(
-                                  'No hay publicaciones disponibles por el momento.',
-                                ),
-                              );
-                            }
-                            return RefreshIndicator(
-                              onRefresh: () async {
-                                setState(() {});
-                              },
-                              child: ListView.builder(
-                                padding: const EdgeInsets.all(12.0),
-                                itemCount: publicaciones.length,
-                                itemBuilder: (context, index) {
-                                  return PublicacionCard(
-                                    publicacion: publicaciones[index],
-                                  );
-                                },
-                              ),
-                            );
-                          },
+                    );
+                  }
+
+                  final publicaciones = snapshot.data ?? [];
+                  if (publicaciones.isEmpty) {
+                    return const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                        child: Text(
+                          'No hay publicaciones disponibles por el momento.',
+                          style: TextStyle(color: AppTheme.textSecondary, fontSize: 15),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                const GradientHeader(
-                  height: 40,
+                    );
+                  }
+
+                  return SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: PublicacionCard(
+                              publicacion: publicaciones[index],
+                            ),
+                          );
+                        },
+                        childCount: publicaciones.length,
+                      ),
+                    ),
+                  );
+                },
+              ),
+
+              // Pie de página
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
                   child: Center(
                     child: Text(
-                      '©2026 ArteNauta',
+                      '© 2026 ArteNauta • Todos los derechos reservados',
                       style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
+                        color: AppTheme.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
                 ),
-              ],
-            ),
-
-            // BARRERA INVISIBLE: cierra el menú al tocar fuera de él
-            if (_menuAbierto)
-              Positioned.fill(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onTap: _cerrarMenu,
-                ),
               ),
-
-            // MENÚ (va DESPUÉS de la barrera → queda encima y recibe el tap primero)
-            if (_menuAbierto)
-              Positioned(
-                top: 0,
-                right: 16,
-                child: AppMenu(
-                  idRol: idRol,
-                  notifCount: _notifCount,
-                  onMiPerfil: () {
-                    _cerrarMenu();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const PerfilScreen()),
-                    );
-                  },
-                  onConversaciones: () {
-                    _cerrarMenu();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ConversacionesScreen(),
-                      ),
-                    );
-                  },
-                  onNotificaciones: _abrirNotificaciones,
-                  onCerrarSesion: _cerrarSesion,
-                ),
-              ),
-          ],
+            ],
+          ),
         ),
+      ),
+    );
+  }
+}
+
+class _HeaderBienvenidaSection extends StatelessWidget {
+  final String nombre;
+
+  const _HeaderBienvenidaSection({required this.nombre});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '¡Bienvenido, $nombre!',
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.primaryCyan,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Explora y descubre el talento emergente en ArteNauta',
+            style: TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 14,
+            ),
+          ),
+        ],
       ),
     );
   }

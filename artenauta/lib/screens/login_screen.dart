@@ -60,13 +60,13 @@ class _LoginScreenState extends State<LoginScreen> {
           MaterialPageRoute(builder: (context) => const UsuarioScreen()),
         );
 
-              ArtSweetAlert.show(
-              context: context,
-              type: ArtAlertType.success,
-              title: const Text('Bienvenido'),
-              content: const Text(
-                'La sesion se inicio correctamente.',
-              )
+        ArtSweetAlert.show(
+        context: context,
+        type: ArtAlertType.success,
+        title: const Text('Bienvenido'),
+        content: const Text(
+          'La sesion se inicio correctamente.',
+        )
             );
     }
   } catch (e) {
