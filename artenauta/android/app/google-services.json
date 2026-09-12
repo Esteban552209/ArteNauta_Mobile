@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "35897279938",
+    "project_id": "artenauta",
+    "storage_bucket": "artenauta.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:35897279938:android:be1f4bac2c24f73e04825b",
+        "android_client_info": {
+          "package_name": "com.example.artenauta"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAHkv5J0PgrlKCy5Hpyl_2uNvtsqOpy604"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

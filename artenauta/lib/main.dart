@@ -7,17 +7,40 @@ import 'screens/admin/admin_users_screen.dart';
 import 'screens/artista_screen.dart'; 
 import 'screens/usuario_screen.dart'; 
 import 'services/session_service.dart';
+import 'services/fcm_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  debugPrint('MAIN INICIADO');
 
   await dotenv.load(fileName: ".env");
+  debugPrint('DOTENV OK');
 
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    publishableKey: dotenv.env['SUPABASE_PUBLISHABLE_KEY']!,
-  );
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    debugPrint('FIREBASE OK');
+
+    await FcmService.inicializar();
+    FcmService.escucharMensajes();
+    debugPrint('FCM OK');
+  } catch (e) {
+    debugPrint('ERROR FIREBASE: $e');
+  }
+
+  try {
+    await Supabase.initialize(
+      url: dotenv.env['SUPABASE_URL']!,
+      publishableKey: dotenv.env['SUPABASE_PUBLISHABLE_KEY']!,
+    );
+    debugPrint('Supabase OK');
+  } catch (e) {
+    debugPrint('Error Supabase: $e');
+  }
 
   runApp(const ArtenautaApp());
 }
@@ -51,7 +74,6 @@ class _SplashRouterState extends State<SplashRouter> {
   }
 
   Future<void> _verificar() async { 
-
     final hay = await SessionService.haySesion();
     if (!mounted) return;
 
