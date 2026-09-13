@@ -12,7 +12,6 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-
   final _nombreController = TextEditingController();
   final _apellidoController = TextEditingController();
   final _telefonoController = TextEditingController();
@@ -27,15 +26,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _mostrarConfirmacion = false;
 
   Future<void> _handleRegister() async {
-
     final nombre = _nombreController.text.trim();
     final apellido = _apellidoController.text.trim();
     final telefono = _telefonoController.text.trim();
     final email = _emailController.text.trim();
     final clave = _claveController.text.trim();
-    final confirmarClave =
-        _confirmarClaveController.text.trim();
-
+    final confirmarClave = _confirmarClaveController.text.trim();
 
     if (nombre.isEmpty ||
         apellido.isEmpty ||
@@ -43,54 +39,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
         email.isEmpty ||
         clave.isEmpty ||
         confirmarClave.isEmpty) {
-
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Por favor completa todos los campos',
-          ),
-        ),
+        const SnackBar(content: Text('Por favor completa todos los campos')),
       );
-
       return;
     }
 
     if (!email.contains('@')) {
-
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Ingresa un correo electrónico válido',
-          ),
-        ),
+        const SnackBar(content: Text('Ingresa un correo electrónico válido')),
       );
-
       return;
     }
 
-    if (clave.length < 6) {
-
+    final passwordRegex = RegExp(r'^(?=.*[A-Za-z])(?=.*\d).{8,}$');
+    if (!passwordRegex.hasMatch(clave)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'La contraseña debe tener mínimo 6 caracteres',
+            'La contraseña debe tener al menos 8 caracteres, una letra y un número',
           ),
         ),
       );
-
       return;
     }
 
     if (clave != confirmarClave) {
-
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Las contraseñas no coinciden',
-          ),
-        ),
+        const SnackBar(content: Text('Las contraseñas no coinciden')),
       );
-
       return;
     }
 
@@ -99,7 +76,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
-
       await _authService.registrarUsuario(
         nombre: nombre,
         apellido: apellido,
@@ -112,38 +88,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Registro exitoso. Ahora puedes iniciar sesión.',
-          ),
+          content: Text('Registro exitoso. Ahora puedes iniciar sesión.'),
           backgroundColor: Colors.green,
         ),
       );
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (context) => const LoginScreen(),
-        ),
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
       );
-
     } catch (e) {
-
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            e.toString().replaceAll(
-              'Exception: ',
-              '',
-            ),
-          ),
+          content: Text(e.toString().replaceAll('Exception: ', '')),
           backgroundColor: Colors.red,
         ),
       );
-
     } finally {
-
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -154,7 +117,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   void dispose() {
-
     _nombreController.dispose();
     _telefonoController.dispose();
     _emailController.dispose();
@@ -166,14 +128,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: Colors.white,
 
       body: SafeArea(
         child: Column(
           children: [
-
             // HEADER
 
             const GradientHeader(
@@ -192,7 +152,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
 
             // FORMULARIO
-    
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(
@@ -205,29 +164,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   shadowColor: Colors.black26,
 
                   shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(18),
                   ),
 
                   child: Padding(
                     padding: const EdgeInsets.all(22),
 
                     child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.stretch,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
 
                       children: [
-
                         const Text(
                           'Registrarme',
                           textAlign: TextAlign.center,
 
                           style: TextStyle(
                             fontSize: 25,
-                            fontWeight:
-                                FontWeight.bold,
-                            color:
-                                AppTheme.primaryCyan,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primaryCyan,
                           ),
                         ),
 
@@ -238,8 +192,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           textAlign: TextAlign.center,
 
                           style: TextStyle(
-                            color:
-                                AppTheme.textSecondary,
+                            color: AppTheme.textSecondary,
                             fontSize: 13,
                           ),
                         ),
@@ -247,40 +200,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         const SizedBox(height: 25),
 
                         // NOMBRE
-
-                        _buildLabel(
-                          'Nombre',
-                        ),
+                        _buildLabel('Nombre'),
 
                         const SizedBox(height: 8),
 
                         TextField(
-                          controller:
-                              _nombreController,
+                          controller: _nombreController,
 
-                          decoration:
-                              _inputDecoration(
+                          decoration: _inputDecoration(
                             'Nombre',
                             Icons.person_outline,
                           ),
                         ),
 
                         const SizedBox(height: 17),
-                        
-                         // Apellido
 
-                        _buildLabel(
-                          'Apellido',
-                        ),
+                        // Apellido
+                        _buildLabel('Apellido'),
 
                         const SizedBox(height: 8),
 
                         TextField(
-                          controller:
-                              _apellidoController,
+                          controller: _apellidoController,
 
-                          decoration:
-                              _inputDecoration(
+                          decoration: _inputDecoration(
                             'Apellido',
                             Icons.person_outline,
                           ),
@@ -289,22 +232,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         const SizedBox(height: 17),
 
                         // TELEFONO
-
-                        _buildLabel(
-                          'Teléfono',
-                        ),
+                        _buildLabel('Teléfono'),
 
                         const SizedBox(height: 8),
 
                         TextField(
-                          controller:
-                              _telefonoController,
+                          controller: _telefonoController,
 
-                          keyboardType:
-                              TextInputType.phone,
+                          keyboardType: TextInputType.phone,
 
-                          decoration:
-                              _inputDecoration(
+                          decoration: _inputDecoration(
                             'Teléfono',
                             Icons.phone_outlined,
                           ),
@@ -313,22 +250,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         const SizedBox(height: 17),
 
                         // EMAIL
-
-                        _buildLabel(
-                          'Email',
-                        ),
+                        _buildLabel('Email'),
 
                         const SizedBox(height: 8),
 
                         TextField(
-                          controller:
-                              _emailController,
+                          controller: _emailController,
 
-                          keyboardType:
-                              TextInputType.emailAddress,
+                          keyboardType: TextInputType.emailAddress,
 
-                          decoration:
-                              _inputDecoration(
+                          decoration: _inputDecoration(
                             'Correo Electrónico',
                             Icons.email_outlined,
                           ),
@@ -337,116 +268,88 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         const SizedBox(height: 17),
 
                         // CONTRASEÑA
-
-                        _buildLabel(
-                          'Contraseña',
-                        ),
+                        _buildLabel('Contraseña'),
 
                         const SizedBox(height: 8),
 
                         TextField(
-                          controller:
-                              _claveController,
+                          controller: _claveController,
 
-                          obscureText:
-                              !_mostrarClave,
+                          obscureText: !_mostrarClave,
 
                           decoration:
                               _inputDecoration(
-                            'Contraseña',
-                            Icons.lock_outline,
-                          ).copyWith(
-                            suffixIcon:
-                                IconButton(
-                              icon: Icon(
-                                _mostrarClave
-                                    ? Icons
-                                        .visibility_off
-                                    : Icons
-                                        .visibility,
-                              ),
+                                'Contraseña',
+                                Icons.lock_outline,
+                              ).copyWith(
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _mostrarClave
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
+                                  ),
 
-                              onPressed: () {
-                                setState(() {
-                                  _mostrarClave =
-                                      !_mostrarClave;
-                                });
-                              },
-                            ),
-                          ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _mostrarClave = !_mostrarClave;
+                                    });
+                                  },
+                                ),
+                              ),
                         ),
 
                         const SizedBox(height: 17),
 
                         // CONFIRMAR CONTRASEÑA
-
-                        _buildLabel(
-                          'Confirmar Contraseña',
-                        ),
+                        _buildLabel('Confirmar Contraseña'),
 
                         const SizedBox(height: 8),
 
                         TextField(
-                          controller:
-                              _confirmarClaveController,
+                          controller: _confirmarClaveController,
 
-                          obscureText:
-                              !_mostrarConfirmacion,
+                          obscureText: !_mostrarConfirmacion,
 
                           decoration:
                               _inputDecoration(
-                            'Confirmar Contraseña',
-                            Icons.lock_reset_outlined,
-                          ).copyWith(
-                            suffixIcon:
-                                IconButton(
-                              icon: Icon(
-                                _mostrarConfirmacion
-                                    ? Icons
-                                        .visibility_off
-                                    : Icons
-                                        .visibility,
-                              ),
+                                'Confirmar Contraseña',
+                                Icons.lock_reset_outlined,
+                              ).copyWith(
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _mostrarConfirmacion
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
+                                  ),
 
-                              onPressed: () {
-                                setState(() {
-                                  _mostrarConfirmacion =
-                                      !_mostrarConfirmacion;
-                                });
-                              },
-                            ),
-                          ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _mostrarConfirmacion =
+                                          !_mostrarConfirmacion;
+                                    });
+                                  },
+                                ),
+                              ),
                         ),
 
                         const SizedBox(height: 25),
 
                         // BOTÓN
-
                         SizedBox(
                           height: 52,
 
                           child: ElevatedButton(
-                            onPressed:
-                                _isLoading
-                                    ? null
-                                    : _handleRegister,
+                            onPressed: _isLoading ? null : _handleRegister,
 
-                            style:
-                                ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  AppTheme.primaryCyan,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.primaryCyan,
 
-                              foregroundColor:
-                                  Colors.white,
+                              foregroundColor: Colors.white,
 
                               elevation: 2,
 
-                              shape:
-                                  RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(
-                                  10,
-                                ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
                               ),
                             ),
 
@@ -455,10 +358,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     width: 22,
                                     height: 22,
 
-                                    child:
-                                        CircularProgressIndicator(
-                                      color:
-                                          Colors.white,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
                                       strokeWidth: 2,
                                     ),
                                   )
@@ -466,8 +367,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     'Registrarme',
                                     style: TextStyle(
                                       fontSize: 16,
-                                      fontWeight:
-                                          FontWeight.bold,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
                           ),
@@ -476,18 +376,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         const SizedBox(height: 20),
 
                         // IR AL LOGIN
-
                         Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.center,
 
                           children: [
-
                             const Text(
                               '¿Ya tienes cuenta? ',
-                              style: TextStyle(
-                                color: Colors.grey,
-                              ),
+                              style: TextStyle(color: Colors.grey),
                             ),
 
                             GestureDetector(
@@ -495,8 +390,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) =>
-                                        const LoginScreen(),
+                                    builder: (context) => const LoginScreen(),
                                   ),
                                 );
                               },
@@ -504,10 +398,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               child: const Text(
                                 'Iniciar Sesión',
                                 style: TextStyle(
-                                  color:
-                                      AppTheme.primaryCyan,
-                                  fontWeight:
-                                      FontWeight.bold,
+                                  color: AppTheme.primaryCyan,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
@@ -521,7 +413,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
 
             // FOOTER
-
             const GradientHeader(
               height: 70,
 
@@ -547,24 +438,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _buildLabel(String texto) {
     return Text(
       texto,
-      style: const TextStyle(
-        fontWeight: FontWeight.bold,
-        fontSize: 14,
-      ),
+      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
     );
   }
 
-  InputDecoration _inputDecoration(
-    String hint,
-    IconData icon,
-  ) {
+  InputDecoration _inputDecoration(String hint, IconData icon) {
     return InputDecoration(
       hintText: hint,
       prefixIcon: Icon(icon),
 
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
 
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
@@ -572,10 +455,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(
-          color: AppTheme.primaryCyan,
-          width: 2,
-        ),
+        borderSide: const BorderSide(color: AppTheme.primaryCyan, width: 2),
       ),
     );
   }

@@ -25,79 +25,94 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _mostrarClave = false;
 
   Future<void> _handleLogin() async {
-  final email = _emailController.text.trim();
-  final clave = _claveController.text.trim();
+    final email = _emailController.text.trim();
+    final clave = _claveController.text.trim();
 
-  setState(() {
-    _isLoading = true;
-  });
-
-  try {
-    final int idRol = await _authService.loginConEdgeFunction(
-      email: email,
-      clave: clave,
-    );
-
-    if (!mounted) return;
-
-    // Redirección según rol
-    switch (idRol) {
-      case 3:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const AdminUsersScreen()),
-        );
-        break;
-      case 2:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const TestArtistaScreen()),
-        );
-        break;
-      default:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const UsuarioScreen()),
-        );
-
-              ArtSweetAlert.show(
-              context: context,
-              type: ArtAlertType.success,
-              title: const Text('Bienvenido'),
-              content: const Text(
-                'La sesion se inicio correctamente.',
-              )
-            );
+    if (email.isEmpty || clave.isEmpty) {
+      ArtSweetAlert.show(
+        context: context,
+        type: ArtAlertType.warning,
+        title: const Text('Campos incompletos'),
+        content: const Text(
+          'Por favor completa todos los campos para continuar.',
+        ),
+        actions: [
+          ArtAlertButton(
+            onPressed: () => Navigator.pop(context),
+            backgroundColor: AppTheme.primaryCyan,
+            textColor: Colors.white,
+            child: const Text('Entendido'),
+          ),
+        ],
+      );
+      return;
     }
-  } catch (e) {
-    if (!mounted) return;
 
-    ArtSweetAlert.show(
-  context: context,
-  type: ArtAlertType.warning,
-  title: const Text('Campos incompletos'),
-  content: const Text(
-    'Por favor completa todos los campos para continuar.',
-  ),
-  actions: [
-    ArtAlertButton(
-      onPressed: () {
-        Navigator.pop(context);
-      },
-      backgroundColor: AppTheme.primaryCyan,
-      textColor: Colors.white,
-      child: const Text('Entendido'),
-    ),
-  ],
-);
-  } finally {
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final response = await _authService.iniciarSesion(
+        email: email,
+        clave: clave,
+      );
+
+      if (!mounted) return;
+
+      final int idRol = response['usuario']['id_rol'];
+
+      switch (idRol) {
+        case 3:
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminUsersScreen()),
+          );
+          break;
+        case 2:
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const ArtistaScreen()),
+          );
+          break;
+        default:
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const UsuarioScreen()),
+          );
+      }
+
+      ArtSweetAlert.show(
+        context: context,
+        type: ArtAlertType.success,
+        title: const Text('Bienvenido'),
+        content: const Text('La sesión se inició correctamente.'),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ArtSweetAlert.show(
+        context: context,
+        type: ArtAlertType.error,
+        title: const Text('Error al iniciar sesión'),
+        content: Text(e.toString().replaceAll('Exception: ', '')),
+        actions: [
+          ArtAlertButton(
+            onPressed: () => Navigator.pop(context),
+            backgroundColor: AppTheme.primaryCyan,
+            textColor: Colors.white,
+            child: const Text('Entendido'),
+          ),
+        ],
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
-}
 
   @override
   void dispose() {
@@ -166,9 +181,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const Text(
                           'Correo electrónico',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
                         TextField(
@@ -176,9 +189,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           keyboardType: TextInputType.emailAddress,
                           decoration: InputDecoration(
                             hintText: 'Correo Electrónico',
-                            prefixIcon: const Icon(
-                              Icons.email_outlined,
-                            ),
+                            prefixIcon: const Icon(Icons.email_outlined),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -188,9 +199,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const Text(
                           'Contraseña',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
                         TextField(
@@ -198,9 +207,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           obscureText: !_mostrarClave,
                           decoration: InputDecoration(
                             hintText: 'Contraseña',
-                            prefixIcon: const Icon(
-                              Icons.lock_outline,
-                            ),
+                            prefixIcon: const Icon(Icons.lock_outline),
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _mostrarClave
@@ -259,16 +266,15 @@ class _LoginScreenState extends State<LoginScreen> {
                           children: [
                             const Text(
                               '¿No tienes una cuenta? ',
-                              style: TextStyle(
-                                color: Colors.grey,
-                              ),
+                              style: TextStyle(color: Colors.grey),
                             ),
                             GestureDetector(
                               onTap: () {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => const RegisterScreen(),
+                                    builder: (context) =>
+                                        const RegisterScreen(),
                                   ),
                                 );
                               },

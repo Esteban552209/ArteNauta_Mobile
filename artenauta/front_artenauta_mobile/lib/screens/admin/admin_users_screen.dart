@@ -1,11 +1,10 @@
-import 'dart:convert';
+// import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+// import 'package:http/http.dart' as http;
+// import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../core/theme/app_theme.dart';
 import '../../widgets/gradient_header.dart';
-import '../../services/session_service.dart';
-import '../../widgets/admin_drawer.dart';
+// import '../../widgets/admin_drawer.dart';
 
 class AdminUsersScreen extends StatefulWidget {
   const AdminUsersScreen({super.key});
@@ -28,58 +27,13 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   }
 
   Future<void> _cargarEstadisticas() async {
-    try {
-      final String? token = await SessionService.getToken();
-
-      if (token == null) throw Exception('No hay sesión activa');
-
-      final String baseUrl = dotenv.env['SUPABASE_URL']!;
-      final url = Uri.parse('$baseUrl/functions/v1/estadisticas');
-
-      final response = await http.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      final data = jsonDecode(response.body);
-
-      if (response.statusCode != 200) {
-        throw Exception(
-          data['error'] ??
-              data['mensaje'] ??
-              'Error al cargar datos HTTP ${response.statusCode}',
-        );
-      }
-
-      if (mounted) {
-        setState(() {
-          _totalUsuarios = data['totalUsuarios'] ?? 0;
-          _totalArtistas = data['totalArtistas'] ?? 0;
-          _totalObras = data['totalPublicaciones'] ?? 0;
-          _totalComentarios = data['totalComentarios'] ?? 0;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      debugPrint("Error real en petición a la API: $e");
-
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error al cargar las estadísticas')),
-        );
-      }
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      endDrawer: const AdminDrawer(),
+      // endDrawer: const AdminDrawer(),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

@@ -31,7 +31,6 @@ flutter:
   assets:
     - assets/LOGO.png
     - assets/icons/
-    - .env
 
 flutter_launcher_icons:
   android: true

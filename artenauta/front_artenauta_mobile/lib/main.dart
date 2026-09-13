@@ -1,23 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/theme/app_theme.dart';
-import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/admin/admin_users_screen.dart';
 import 'screens/artista_screen.dart'; 
 import 'screens/usuario_screen.dart'; 
 import 'services/session_service.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  await dotenv.load(fileName: ".env");
-
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    publishableKey: dotenv.env['SUPABASE_PUBLISHABLE_KEY']!,
-  );
 
   runApp(const ArtenautaApp());
 }
@@ -62,11 +52,11 @@ class _SplashRouterState extends State<SplashRouter> {
       if (rol == 3) { 
         pantallaDestino = const AdminUsersScreen();
       } else if (rol == 2) {
-        pantallaDestino = const TestArtistaScreen(); 
+        pantallaDestino = const ArtistaScreen(); 
       } else if (rol == 1) {
         pantallaDestino = const UsuarioScreen(); 
       } else {
-        pantallaDestino = const HomeScreen(); 
+        pantallaDestino = const LoginScreen(); 
       }
 
       Navigator.pushReplacement(

@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../services/session_service.dart';
-import '../services/publicaciones_service.dart';
-import '../services/notificaciones_service.dart';
 import '../widgets/app_header.dart';
 import '../widgets/app_menu.dart';
 import '../widgets/gradient_header.dart';
-import '../widgets/notificaciones/notificaciones_panel.dart';
-import '../widgets/publicaciones/publicacion_card.dart';
-import '../screens/perfil_screen.dart';
+// import '../widgets/notificaciones/notificaciones_panel.dart';
+// import '../widgets/publicaciones/publicacion_card.dart';
+// import '../screens/perfil_screen.dart';
 import '../screens/login_screen.dart';
-import '../screens/conversaciones_screen.dart';
+// import '../screens/conversaciones_screen.dart';
 
 class UsuarioScreen extends StatefulWidget {
   const UsuarioScreen({super.key});
@@ -20,7 +18,7 @@ class UsuarioScreen extends StatefulWidget {
 }
 
 class _UsuarioScreenState extends State<UsuarioScreen> {
-  final PublicacionesService _publicacionesService = PublicacionesService();
+  // final PublicacionesService _publicacionesService = PublicacionesService();
 
   Map<String, dynamic>? _usuario;
   bool _menuAbierto = false;
@@ -29,45 +27,45 @@ class _UsuarioScreenState extends State<UsuarioScreen> {
   @override
   void initState() {
     super.initState();
-    _cargarDatos();
+    // _cargarDatos();
   }
 
   // ============================================================
   // CARGAR USUARIO Y NOTIFICACIONES
   // ============================================================
 
-  Future<void> _cargarDatos() async {
-    try {
-      final usuario = await SessionService.getUsuario();
-      final count = await NotificacionesService.contarNuevas();
+  // Future<void> _cargarDatos() async {
+  //   try {
+  //     final usuario = await SessionService.getUsuario();
+  //     final count = await NotificacionesService.contarNuevas();
 
-      if (!mounted) return;
+  //     if (!mounted) return;
 
-      setState(() {
-        _usuario = usuario;
-        _notifCount = count;
-      });
-    } catch (e) {
-      debugPrint('Error cargando datos del usuario: $e');
-    }
-  }
+  //     setState(() {
+  //       _usuario = usuario;
+  //       _notifCount = count;
+  //     });
+  //   } catch (e) {
+  //     debugPrint('Error cargando datos del usuario: $e');
+  //   }
+  // }
 
-  Future<void> _abrirNotificaciones() async {
-    _cerrarMenu();
+  // Future<void> _abrirNotificaciones() async {
+  //   _cerrarMenu();
 
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const NotificacionesPanel()),
-    );
+  //   await Navigator.push(
+  //     context,
+  //     MaterialPageRoute(builder: (_) => const NotificacionesPanel()),
+  //   );
 
-    try {
-      final count = await NotificacionesService.contarNuevas();
-      if (!mounted) return;
-      setState(() => _notifCount = count);
-    } catch (e) {
-      debugPrint('Error actualizando notificaciones: $e');
-    }
-  }
+  //   try {
+  //     final count = await NotificacionesService.contarNuevas();
+  //     if (!mounted) return;
+  //     setState(() => _notifCount = count);
+  //   } catch (e) {
+  //     debugPrint('Error actualizando notificaciones: $e');
+  //   }
+  // }
 
   Future<void> _cerrarSesion() async {
     await SessionService.cerrarSesion();
@@ -130,55 +128,55 @@ class _UsuarioScreenState extends State<UsuarioScreen> {
                           ],
                         ),
                       ),
-                      Expanded(
-                        child: FutureBuilder<List<Map<String, dynamic>>>(
-                          future: _publicacionesService.obtenerPublicaciones(),
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const Center(
-                                child: CircularProgressIndicator(
-                                  color: AppTheme.primaryCyan,
-                                ),
-                              );
-                            }
-                            if (snapshot.hasError) {
-                              return Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(20),
-                                  child: Text(
-                                    'Error al cargar publicaciones:\n${snapshot.error}',
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(color: Colors.red),
-                                  ),
-                                ),
-                              );
-                            }
-                            final publicaciones = snapshot.data ?? [];
-                            if (publicaciones.isEmpty) {
-                              return const Center(
-                                child: Text(
-                                  'No hay publicaciones disponibles por el momento.',
-                                ),
-                              );
-                            }
-                            return RefreshIndicator(
-                              onRefresh: () async {
-                                setState(() {});
-                              },
-                              child: ListView.builder(
-                                padding: const EdgeInsets.all(12.0),
-                                itemCount: publicaciones.length,
-                                itemBuilder: (context, index) {
-                                  return PublicacionCard(
-                                    publicacion: publicaciones[index],
-                                  );
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                      ),
+                      // Expanded(
+                      //   child: FutureBuilder<List<Map<String, dynamic>>>(
+                      //     future: _publicacionesService.obtenerPublicaciones(),
+                      //     builder: (context, snapshot) {
+                      //       if (snapshot.connectionState ==
+                      //           ConnectionState.waiting) {
+                      //         return const Center(
+                      //           child: CircularProgressIndicator(
+                      //             color: AppTheme.primaryCyan,
+                      //           ),
+                      //         );
+                      //       }
+                      //       if (snapshot.hasError) {
+                      //         return Center(
+                      //           child: Padding(
+                      //             padding: const EdgeInsets.all(20),
+                      //             child: Text(
+                      //               'Error al cargar publicaciones:\n${snapshot.error}',
+                      //               textAlign: TextAlign.center,
+                      //               style: const TextStyle(color: Colors.red),
+                      //             ),
+                      //           ),
+                      //         );
+                      //       }
+                      //       final publicaciones = snapshot.data ?? [];
+                      //       if (publicaciones.isEmpty) {
+                      //         return const Center(
+                      //           child: Text(
+                      //             'No hay publicaciones disponibles por el momento.',
+                      //           ),
+                      //         );
+                      //       }
+                      //       return RefreshIndicator(
+                      //         onRefresh: () async {
+                      //           setState(() {});
+                      //         },
+                      //         child: ListView.builder(
+                      //           padding: const EdgeInsets.all(12.0),
+                      //           itemCount: publicaciones.length,
+                      //           itemBuilder: (context, index) {
+                      //             return PublicacionCard(
+                      //               publicacion: publicaciones[index],
+                      //             );
+                      //           },
+                      //         ),
+                      //       );
+                      //     },
+                      //   ),
+                      // ),
                     ],
                   ),
                 ),
@@ -198,7 +196,6 @@ class _UsuarioScreenState extends State<UsuarioScreen> {
               ],
             ),
 
-            // BARRERA INVISIBLE: cierra el menú al tocar fuera de él
             if (_menuAbierto)
               Positioned.fill(
                 child: GestureDetector(
@@ -217,21 +214,21 @@ class _UsuarioScreenState extends State<UsuarioScreen> {
                   notifCount: _notifCount,
                   onMiPerfil: () {
                     _cerrarMenu();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const PerfilScreen()),
-                    );
+                    // Navigator.push(
+                    //   context,
+                    //   // MaterialPageRoute(builder: (_) => const PerfilScreen()),
+                    // );
                   },
-                  onConversaciones: () {
-                    _cerrarMenu();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ConversacionesScreen(),
-                      ),
-                    );
-                  },
-                  onNotificaciones: _abrirNotificaciones,
+                  // onConversaciones: () {
+                  //   _cerrarMenu();
+                  //   Navigator.push(
+                  //     context,
+                  //     MaterialPageRoute(
+                  //       builder: (_) => const ConversacionesScreen(),
+                  //     ),
+                  //   );
+                  // },
+                  // onNotificaciones: _abrirNotificaciones,
                   onCerrarSesion: _cerrarSesion,
                 ),
               ),
