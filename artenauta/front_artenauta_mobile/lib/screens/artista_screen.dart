@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../widgets/app_header.dart';
-// import '../widgets/app_menu.dart';
+import '../widgets/app_menu.dart';
 import '../widgets/gradient_header.dart';
-// import '../widgets/notificaciones/notificaciones_panel.dart';
-// import '../widgets/publicaciones/crear_publicacion_modal.dart';
-// import '../screens/perfil_screen.dart';
+import '../widgets/notificaciones/notificaciones_panel.dart';
+import '../widgets/publicaciones/crear_publicacion_modal.dart';
+import '../screens/perfil_screen.dart';
 import '../screens/login_screen.dart';
-// import '../screens/conversaciones_screen.dart';
+import '../screens/conversaciones_screen.dart';
 import '../services/session_service.dart';
 
 class ArtistaScreen extends StatefulWidget {
@@ -29,13 +29,15 @@ class _ArtistaScreenState extends State<ArtistaScreen> {
   }
 
   Future<void> _cargar() async {
-    // final u = await SessionService.getUsuario();
+    final u = await SessionService.getUsuario();
+    // Nota: Si aún no tienes un NotificacionesService creado, 
+    // puedes manejar el contador en 0 o descomentarlo cuando esté listo.
     // final count = await NotificacionesService.contarNuevas();
 
-    // setState(() {
-    //   _usuario = u;
-    //   _notifCount = count;
-    // });
+    setState(() {
+      _usuario = u;
+      // _notifCount = count;
+    });
   }
 
   Future<void> _cerrarSesion() async {
@@ -49,29 +51,29 @@ class _ArtistaScreenState extends State<ArtistaScreen> {
 
   void _cerrarMenu() => setState(() => _menuAbierto = false);
 
-  // Future<void> _abrirNotificaciones() async {
-  //   _cerrarMenu();
-  //   await Navigator.push(
-  //     context,
-  //     MaterialPageRoute(builder: (_) => const NotificacionesPanel()),
-  //   );
-  //   // final count = await NotificacionesService.contarNuevas();
-  //   // setState(() => _notifCount = count);
-  // }
+  Future<void> _abrirNotificaciones() async {
+    _cerrarMenu();
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const NotificacionesPanel()),
+    );
+    // final count = await NotificacionesService.contarNuevas();
+    // setState(() => _notifCount = count);
+  }
 
   // Muestra el Modal de Nueva Publicación
   void _abrirModalPublicar() async {
-    // _cerrarMenu();
-    // final resultado = await showModalBottomSheet<bool>(
-    //   context: context,
-    //   isScrollControlled: true,
-    //   backgroundColor: Colors.transparent,
-    //   builder: (context) => const CrearPublicacionModal(),
-    // );
+    _cerrarMenu();
+    final resultado = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const CrearPublicacionModal(),
+    );
 
-    // if (resultado == true) {
-    //   _cargar();
-    // }
+    if (resultado == true) {
+      _cargar();
+    }
   }
 
   @override
@@ -93,7 +95,6 @@ class _ArtistaScreenState extends State<ArtistaScreen> {
               notifCount: _notifCount,
               onMenuTap: () => setState(() => _menuAbierto = !_menuAbierto),
             ),
-
             Expanded(
               child: Stack(
                 children: [
@@ -120,55 +121,52 @@ class _ArtistaScreenState extends State<ArtistaScreen> {
                   ),
 
                   // MENÚ DESPLEGABLE
-                  //       if (_menuAbierto)
-                  //         Positioned(
-                  //           top: 0,
-                  //           right: 16,
-                  //           child: AppMenu(
-                  //             idRol: idRol,
-                  //             notifCount: _notifCount,
-                  //             onNuevaPublicacion: _abrirModalPublicar,
-                  //             onMiPerfil: () {
-                  //               _cerrarMenu();
-                  //               Navigator.push(
-                  //                 context,
-                  //                 MaterialPageRoute(
-                  //                   builder: (_) => const PerfilScreen(),
-                  //                 ),
-                  //               );
-                  //             },
-                  //             onConversaciones: () {
-                  //               _cerrarMenu();
-                  //               Navigator.push(
-                  //                 context,
-                  //                 MaterialPageRoute(
-                  //                   builder: (_) => const ConversacionesScreen(),
-                  //                 ),
-                  //               );
-                  //             },
-                  //             onNotificaciones: _abrirNotificaciones,
-                  //             onCerrarSesion: _cerrarSesion,
-                  //           ),
-                  //         ),
-                  //     ],
-                  //   ),
-                  // ),
-
-                  // FOOTER
-                  const GradientHeader(
-                    height: 50,
-                    child: Center(
-                      child: Text(
-                        '©2026 ArteNauta',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
+                  if (_menuAbierto)
+                    Positioned(
+                      top: 0,
+                      right: 16,
+                      child: AppMenu(
+                        idRol: idRol,
+                        notifCount: _notifCount,
+                        onNuevaPublicacion: _abrirModalPublicar,
+                        onMiPerfil: () {
+                          _cerrarMenu();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const PerfilScreen(),
+                            ),
+                          );
+                        },
+                        onConversaciones: () {
+                          _cerrarMenu();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ConversacionesScreen(),
+                            ),
+                          );
+                        },
+                        onNotificaciones: _abrirNotificaciones,
+                        onCerrarSesion: _cerrarSesion,
                       ),
                     ),
-                  ),
+
+                  // FOOTER (Alineado abajo si gustas usar Align, o tal cual lo tenías)
                 ],
+              ),
+            ),
+            const GradientHeader(
+              height: 50,
+              child: Center(
+                child: Text(
+                  '©2026 ArteNauta',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
               ),
             ),
           ],

@@ -26,6 +26,15 @@ class SessionService {
     return null;
   }
 
+  static Future<Map<String, dynamic>?> getUsuario() async {
+    final prefs = await SharedPreferences.getInstance();
+    final usuarioString = prefs.getString(_keyUsuario);
+    if (usuarioString != null) {
+      return jsonDecode(usuarioString) as Map<String, dynamic>;
+    }
+    return null;
+  }
+
   static Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_keyToken);
