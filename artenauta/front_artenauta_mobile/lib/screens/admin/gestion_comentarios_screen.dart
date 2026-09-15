@@ -1,8 +1,6 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../services/session_service.dart';
+import '../../services/admin/comentarios_service.dart'; 
 import '../../core/theme/app_theme.dart';
 import '../../widgets/gradient_header.dart';
 
@@ -17,6 +15,8 @@ class _GestionComentariosScreenState extends State<GestionComentariosScreen> {
   List<dynamic> _comentarios = [];
   bool _isLoading = true;
 
+  final ComentariosService _comentariosService = ComentariosService();
+
   @override
   void initState() {
     super.initState();
@@ -29,23 +29,16 @@ class _GestionComentariosScreenState extends State<GestionComentariosScreen> {
       final String? token = await SessionService.getToken();
       if (token == null) throw Exception('No hay sesión activa');
 
-      final String baseUrl = dotenv.env['SUPABASE_URL']!;
-
-      final response = await http.get(
-        Uri.parse('$baseUrl/functions/v1/gestion_comentarios'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      final data = jsonDecode(response.body);
-
-      if (response.statusCode != 200) throw Exception(data['error'] ?? 'Error desconocido');
+      final data = await _comentariosService.getComentariosAdmin(token);
 
       setState(() => _comentarios = data);
     } catch (e) {
       debugPrint("Error GET Comentarios: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al cargar comentarios: $e'), backgroundColor: Colors.red),
+        );
+      }
     } finally {
       setState(() => _isLoading = false);
     }
@@ -75,25 +68,19 @@ class _GestionComentariosScreenState extends State<GestionComentariosScreen> {
 
     try {
       final String? token = await SessionService.getToken();
-      final String baseUrl = dotenv.env['SUPABASE_URL']!;
-      
-      final response = await http.delete(
-        Uri.parse('$baseUrl/functions/v1/gestion_comentarios?id_comentario=$idComentario'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+      if (token == null) throw Exception('No hay sesión activa');
+
+      await _comentariosService.eliminarComentario(
+        token: token,
+        idComentario: idComentario,
       );
 
-      if (response.statusCode == 200) {
-        _cargarComentarios();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Comentario eliminado correctamente'), backgroundColor: Colors.green),
-          );
-        }
-      } else {
-        throw Exception(jsonDecode(response.body)['error']);
+      _cargarComentarios();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Comentario eliminado correctamente'), backgroundColor: Colors.green),
+        );
       }
     } catch (e) {
       debugPrint("Error DELETE: $e");
