@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../../core/theme/app_theme.dart';
 
 class ComentarioInput extends StatefulWidget {
@@ -86,10 +85,6 @@ class _ComentarioInputState
             CrossAxisAlignment.end,
 
         children: [
-          // ======================================================
-          // TEXTFIELD
-          // ======================================================
-
           Expanded(
             child: TextField(
               controller:
@@ -135,10 +130,6 @@ class _ComentarioInputState
           ),
 
           const SizedBox(width: 8),
-
-          // ======================================================
-          // ENVIAR
-          // ======================================================
 
           Container(
             decoration:
