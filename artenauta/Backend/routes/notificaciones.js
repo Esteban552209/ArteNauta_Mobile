@@ -301,5 +301,58 @@ router.delete("/solicitudes/:id", verificarToken, async (req, res) => {
     }
 });
 
+// POST /notificaciones/like
+router.post('/notificaciones/like', verificarToken, async (req, res) => {
+  const { id_publicacion, id_usuario, nombre_usuario } = req.body;
+  try {
+    const { data: pub } = await supabase
+      .from('publicaciones')
+      .select('id_usuario_artista')
+      .eq('id_publicacion', id_publicacion)
+      .single();
+
+    const idArtista = pub?.id_usuario_artista;
+
+    if (idArtista && idArtista !== id_usuario) {
+      await supabase.from('notificaciones').insert({
+        id_usuario: idArtista,
+        asunto: `${nombre_usuario} le dio Me gusta a tu publicación`,
+        tipo_notificacion: 'Reaccion',
+        fecha_notificacion: new Date().toISOString(),
+      });
+    }
+
+    res.status(200).json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /notificaciones/comentario
+router.post('/notificaciones/comentario', verificarToken, async (req, res) => {
+  const { id_publicacion, id_usuario, nombre_usuario } = req.body;
+  try {
+    const { data: pub } = await supabase
+      .from('publicaciones')
+      .select('id_usuario_artista')
+      .eq('id_publicacion', id_publicacion)
+      .single();
+
+    const idArtista = pub?.id_usuario_artista;
+
+    if (idArtista && idArtista !== id_usuario) {
+      await supabase.from('notificaciones').insert({
+        id_usuario: idArtista,
+        asunto: `${nombre_usuario} comentó tu publicación`,
+        tipo_notificacion: 'Comentario',
+        fecha_notificacion: new Date().toISOString(),
+      });
+    }
+
+    res.status(200).json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 export default router;  
