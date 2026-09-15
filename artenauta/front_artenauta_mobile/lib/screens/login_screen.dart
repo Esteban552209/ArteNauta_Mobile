@@ -72,7 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
         case 2:
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const ArtistaScreen()),
+            MaterialPageRoute(builder: (context) => const TestArtistaScreen()),
           );
           break;
         default:

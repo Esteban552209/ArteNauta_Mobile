@@ -4,7 +4,7 @@ import { verificarToken } from "../middlewares/verificarToken.js";
 
 const router = express.Router();
 
-// GET: obtener el perfil completo del usuario autenticado (usuario + perfil, si existe)
+// GET: obtener el perfil completo del usuario autenticado
 router.get("/perfil", verificarToken, async (req, res) => {
     try {
         const id_usuario = req.usuario.id_usuario;
@@ -17,6 +17,7 @@ router.get("/perfil", verificarToken, async (req, res) => {
                 apellido,
                 email,
                 telefono,
+                id_rol,
                 perfiles (
                     id_perfil,
                     foto_perfil,
@@ -36,6 +37,7 @@ router.get("/perfil", verificarToken, async (req, res) => {
             apellido: data.apellido,
             email: data.email,
             telefono: data.telefono,
+            id_rol: data.id_rol,
             foto_perfil: perfil?.foto_perfil ?? null,
             descripcion: perfil?.descripcion ?? "",
             ocupacion: perfil?.ocupacion ?? "",

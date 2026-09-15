@@ -1,227 +1,141 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
-import 'package:art_sweetalert_new/art_sweetalert_new.dart';
+import '../screens/perfil_screen.dart';
+import '../screens/conversaciones_screen.dart';
 
 class AppMenu extends StatelessWidget {
   final int idRol;
-  final int notifCount; 
-  final VoidCallback? onNuevaPublicacion;
-  final VoidCallback? onMiPerfil;
-  final VoidCallback? onConversaciones;
-  final VoidCallback? onNotificaciones;
-  final VoidCallback? onCerrarSesion;
+  final int notifCount;
+  final VoidCallback onNotificacionesTap;
+  final VoidCallback onCerrarSesion;
 
   const AppMenu({
     super.key,
     required this.idRol,
-    this.notifCount = 0, 
-    this.onNuevaPublicacion,
-    this.onMiPerfil,
-    this.onConversaciones,
-    this.onNotificaciones,
-    this.onCerrarSesion,
+    required this.notifCount,
+    required this.onNotificacionesTap,
+    required this.onCerrarSesion,
   });
+
+  static void mostrar(
+    BuildContext context, {
+    required int idRol,
+    required int notifCount,
+    required VoidCallback onNotificacionesTap,
+    required VoidCallback onCerrarSesion,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      elevation: 10,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return AppMenu(
+          idRol: idRol,
+          notifCount: notifCount,
+          onNotificacionesTap: onNotificacionesTap,
+          onCerrarSesion: onCerrarSesion,
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      elevation: 8,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        width: 210,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-        ),
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (idRol == 2) ...[
-              _Item(
-                icon: Icons.add_circle_outline,
-                label: 'Nueva Publicación',
-                color: AppTheme.primaryCyan,
-                onTap: onNuevaPublicacion ?? () {},
-              ),
-              const Divider(height: 1),
-            ],
-            _Item(
-              icon: Icons.person_outline,
-              label: 'Mi Perfil',
-              color: AppTheme.primaryCyan,
-              onTap: onMiPerfil ?? () {},
-            ),
-
-            const Divider(height: 1),
-            _Item(
-              icon: Icons.chat_bubble_outline,
-              label: 'Conversaciones',
-              color: AppTheme.primaryCyan,
-              onTap: onConversaciones ?? () {},
-            ),
-
-            const Divider(height: 1),
-
-            InkWell(
-              onTap: onNotificaciones ?? () {},
-              borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 13),
-                child: Row(
-                  children: [
-                    Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Icon(Icons.notifications_outlined,
-                            color: AppTheme.primaryCyan, size: 20),
-                        if (notifCount > 0)
-                          Positioned(
-                            top: -6,
-                            right: -6,
-                            child: Container(
-                              padding: const EdgeInsets.all(3),
-                              decoration: const BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
-                              ),
-                              constraints: const BoxConstraints(
-                                minWidth: 16,
-                                minHeight: 16,
-                              ),
-                              child: Text(
-                                notifCount > 9 ? '9+' : '$notifCount',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'Notificaciones',
-                      style: TextStyle(
-                        color: Colors.black87,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(10),
               ),
             ),
-            const Divider(height: 1),
-
-            const Divider(height: 1),
-            _Item(
-              icon: Icons.logout,
-              label: 'Cerrar Sesión',
-              color: Colors.red,
-
+            ListTile(
+              leading: const CircleAvatar(
+                backgroundColor: AppTheme.primaryCyan,
+                child: Icon(Icons.person_outline, color: Colors.white, size: 30),
+              ),
+              title: const Text('Mi Perfil', style: TextStyle(fontWeight: FontWeight.w600)),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 14),
               onTap: () {
-
-                ArtSweetAlert.show(
-                  context: context,
-                  type: ArtAlertType.warning,
-
-                  title: const Text(
-                    '¿Cerrar sesión?',
-                  ),
-
-                  content: const Text(
-                    '¿Estás seguro de que deseas cerrar tu sesión?',
-                  ),
-
-                  actions: [
-
-                    // CANCELAR
-                    ArtAlertButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-
-                      backgroundColor: Colors.grey,
-                      textColor: Colors.white,
-
-                      child: const Text(
-                        'Cancelar',
-                      ),
-                    ),
-
-                    ArtAlertButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        if (onCerrarSesion != null) {
-                          onCerrarSesion!();
-                        }
-                      },
-                      backgroundColor: Colors.red,
-                      textColor: Colors.white,
-                      child: const Text(
-                        'Cerrar sesión',
-                      ),
-                    ),
-                  ],
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PerfilScreen()),
                 );
               },
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Item extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _Item({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 13,
-        ),
-
-        child: Row(
-          children: [
-
-            Icon(
-              icon,
-              color: color,
-              size: 20,
-            ),
-
-            const SizedBox(width: 12),
-
-            Text(
-              label,
-              style: TextStyle(
-                color: color == Colors.red
-                    ? Colors.red
-                    : Colors.black87,
-                fontWeight: FontWeight.w500,
-                fontSize: 14,
+            ListTile(
+              leading: const CircleAvatar(
+                backgroundColor: AppTheme.primaryCyan,
+                child: Icon(Icons.chat_bubble_outline, color: Colors.white, size: 30),
               ),
+              title: const Text('Conversaciones', style: TextStyle(fontWeight: FontWeight.w600)),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ConversacionesScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: Stack(
+                children: [
+                  const CircleAvatar(
+                    backgroundColor: AppTheme.primaryCyan,
+                    child: Icon(Icons.notifications_none, color: Colors.white, size: 30),
+                  ),
+                  if (notifCount > 0)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: CircleAvatar(
+                        radius: 6,
+                        backgroundColor: Colors.red,
+                        child: Text(
+                          '$notifCount',
+                          style: const TextStyle(
+                            fontSize: 8,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              title: const Text('Notificaciones', style: TextStyle(fontWeight: FontWeight.w600)),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+              onTap: () {
+                Navigator.pop(context);
+                onNotificacionesTap();
+              },
+            ),
+            const Divider(height: 24),
+            ListTile(
+              leading: CircleAvatar(
+                backgroundColor: Colors.red.shade50,
+                child: const Icon(Icons.logout, color: Colors.red, size: 30),
+              ),
+              title: const Text(
+                'Cerrar Sesión',
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                onCerrarSesion();
+              },
             ),
           ],
         ),

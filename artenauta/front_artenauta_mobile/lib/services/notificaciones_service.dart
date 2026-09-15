@@ -1,118 +1,164 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'api_config.dart';
 import 'session_service.dart';
 
 class NotificacionesService {
+  static final SupabaseClient _supabase = Supabase.instance.client;
   static const String _keyUltimaVista = 'notif_ultima_vista';
 
-  Future<Map<String, String>> _headers() async {
-    final token = await SessionService.getToken();
-    return {
-      ...ApiConfig.headers,
-      'Authorization': 'Bearer $token',
-    };
-  }
-
-  // GET notificaciones del usuario
-  Future<List<Map<String, dynamic>>> getNotificaciones() async {
-    final usuario = await SessionService.getUsuario();
-    final idUsuario = usuario?['id_usuario'];
-    final url = Uri.parse('${ApiConfig.baseUrl}/notificaciones?id_usuario=$idUsuario');
-
-    try {
-      final response = await http.get(url, headers: await _headers());
-      if (response.statusCode != 200) return [];
-      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
-    } catch (e) {
-      throw Exception('Error al obtener notificaciones: $e');
-    }
-  }
-
-  // GET solicitudes pendientes (solo admin)
-  Future<List<Map<String, dynamic>>> getSolicitudes() async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/notificaciones/solicitudes');
-
-    try {
-      final response = await http.get(url, headers: await _headers());
-      if (response.statusCode != 200) return [];
-      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
-    } catch (e) {
-      throw Exception('Error al obtener solicitudes: $e');
-    }
-  }
-
-  // PATCH aprobar solicitud
-  Future<void> aprobarSolicitud({
-    required int idSolicitud,
-    required int idUsuario,
-  }) async {
-    final url = Uri.parse(
-        '${ApiConfig.baseUrl}/notificaciones/solicitudes/$idSolicitud/aprobar');
-
-    try {
-      final response = await http.patch(
-        url,
-        headers: await _headers(),
-        body: jsonEncode({'id_usuario': idUsuario}),
-      );
-      if (response.statusCode != 200) {
-        throw Exception('Error al aprobar solicitud');
-      }
-    } catch (e) {
-      throw Exception('Error al aprobar solicitud: $e');
-    }
-  }
-
-  // PATCH rechazar solicitud
-  Future<void> rechazarSolicitud({
-    required int idSolicitud,
-    required int idUsuario,
-  }) async {
-    final url = Uri.parse(
-        '${ApiConfig.baseUrl}/notificaciones/solicitudes/$idSolicitud/rechazar');
-
-    try {
-      final response = await http.patch(
-        url,
-        headers: await _headers(),
-        body: jsonEncode({'id_usuario': idUsuario}),
-      );
-      if (response.statusCode != 200) {
-        throw Exception('Error al rechazar solicitud');
-      }
-    } catch (e) {
-      throw Exception('Error al rechazar solicitud: $e');
-    }
-  }
-
-  // Contar notificaciones nuevas para el badge
-  Future<int> contarNuevas() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final ultimaVista = prefs.getString(_keyUltimaVista);
-      final todas = await getNotificaciones();
-
-      if (ultimaVista == null) return todas.length;
-
-      final fechaVista = DateTime.parse(ultimaVista);
-      return todas.where((n) {
-        final fecha = DateTime.tryParse(
-            n['fecha_notificacion']?.toString() ?? '');
-        return fecha != null && fecha.isAfter(fechaVista);
-      }).length;
-    } catch (e) {
-      return 0;
-    }
-  }
-
-  // Marcar como vistas
-  Future<void> marcarComoVistas() async {
+  /// Guarda la fecha actual en UTC como última vista
+  static Future<void> marcarComoVistas() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       _keyUltimaVista,
       DateTime.now().toUtc().toIso8601String(),
     );
+  }
+
+  /// Obtiene cuántas notificaciones son nuevas desde la última fecha registrada
+  static Future<int> contarNuevas() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final ultimaVista = prefs.getString(_keyUltimaVista);
+
+      final usuario = await SessionService.getUsuario();
+      final idUsuario = usuario?['id_usuario'];
+      if (idUsuario == null) return 0;
+
+      // 1. Inicia la consulta filtrando por usuario
+      var query = _supabase
+          .from('notificaciones')
+          .select('id_notificacion')
+          .eq('id_usuario', idUsuario);
+
+      // 2. Si existe marca de tiempo previa, filtra solo las posteriores (gt = greater than)
+      if (ultimaVista != null) {
+        query = query.gt('fecha_notificacion', ultimaVista);
+      }
+
+      // 3. Ejecuta la consulta
+      final response = await query;
+      return (response as List).length;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  /// GET: Obtener notificaciones del usuario logueado
+  static Future<List<Map<String, dynamic>>> getNotificaciones() async {
+    try {
+      final usuario = await SessionService.getUsuario();
+      final idUsuario = usuario?['id_usuario'];
+      if (idUsuario == null) return [];
+
+      final response = await _supabase
+          .from('notificaciones')
+          .select('*')
+          .eq('id_usuario', idUsuario)
+          .order('fecha_notificacion', ascending: false)
+          .limit(20);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// GET: Obtener solicitudes pendientes (solo admin)
+  static Future<List<Map<String, dynamic>>> getSolicitudes() async {
+    try {
+      final response = await _supabase
+          .from('solicitudes')
+          .select('*, usuarios(nombre, apellido)')
+          .eq('tipo_solicitud', 'artista')
+          .eq('estado_solicitud', 'Pendiente')
+          .order('fecha_solicitud', ascending: false);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// POST: Crear una nueva notificación en formato UTC
+  static Future<bool> crearNotificacion({
+    required int idUsuario,
+    required String asunto,
+    required String tipoNotificacion,
+  }) async {
+    try {
+      await _supabase.from('notificaciones').insert({
+        'id_usuario': idUsuario,
+        'asunto': asunto,
+        'tipo_notificacion': tipoNotificacion,
+        'fecha_notificacion': DateTime.now().toUtc().toIso8601String(),
+      });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// PATCH: Aprobar solicitud + cambiar rol + notificar usuario
+  static Future<bool> aprobarSolicitud(int idSolicitud) async {
+    try {
+      final sol = await _supabase
+          .from('solicitudes')
+          .select('id_usuario')
+          .eq('id_solicitud', idSolicitud)
+          .single();
+
+      final idUsuario = sol['id_usuario'] as int;
+
+      await _supabase
+          .from('solicitudes')
+          .update({'estado_solicitud': 'Aceptada'})
+          .eq('id_solicitud', idSolicitud);
+
+      await _supabase
+          .from('usuarios')
+          .update({'id_rol': 2})
+          .eq('id_usuario', idUsuario);
+
+      await _supabase.from('notificaciones').insert({
+        'id_usuario': idUsuario,
+        'asunto': '¡Tu solicitud para ser artista fue aprobada!',
+        'tipo_notificacion': 'solicitud_aprobada',
+        'fecha_notificacion': DateTime.now().toUtc().toIso8601String(),
+      });
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// PATCH: Rechazar solicitud + notificar usuario
+  static Future<bool> rechazarSolicitud(int idSolicitud) async {
+    try {
+      final sol = await _supabase
+          .from('solicitudes')
+          .select('id_usuario')
+          .eq('id_solicitud', idSolicitud)
+          .single();
+
+      final idUsuario = sol['id_usuario'] as int;
+
+      await _supabase
+          .from('solicitudes')
+          .update({'estado_solicitud': 'Rechazada'})
+          .eq('id_solicitud', idSolicitud);
+
+      await _supabase.from('notificaciones').insert({
+        'id_usuario': idUsuario,
+        'asunto': 'Tu solicitud para ser artista no fue aprobada.',
+        'tipo_notificacion': 'solicitud_rechazada',
+        'fecha_notificacion': DateTime.now().toUtc().toIso8601String(),
+      });
+
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 }

@@ -66,10 +66,7 @@ router.get("/Muro-Publicaciones", verificarToken, async (req, res) => {
 });
 
 // GET: Obtener publicaciones de un artista específico
-router.get(
-    "/publicaciones/artista/:id_artista",
-    verificarToken,
-    async (req, res) => {
+router.get("/publicaciones/artista/:id_artista", verificarToken, async (req, res) => {
         try {
             const { id_artista } = req.params;
             const { data, error } = await supabase

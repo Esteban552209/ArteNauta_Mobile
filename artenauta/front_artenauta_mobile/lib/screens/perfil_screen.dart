@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
-import '../widgets/gradient_header.dart';
 import '../services/session_service.dart';
 import '../services/perfil_service.dart';
+import '../services/publicaciones_service.dart';
+import '../widgets/perfil/perfil_header.dart';
+import '../widgets/perfil/perfil_edit_form.dart';
+import '../widgets/perfil/publicaciones_propias_card.dart';
+import '../widgets/perfil/solicitud_rol_card.dart';
+import '../screens/mis_publicaciones_screeen.dart';
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
@@ -12,138 +17,23 @@ class PerfilScreen extends StatefulWidget {
 }
 
 class _PerfilScreenState extends State<PerfilScreen> {
-  final _service = PerfilService();
+  final TextEditingController _nombreController = TextEditingController();
+  final TextEditingController _apellidoController = TextEditingController();
+  final TextEditingController _telefonoController = TextEditingController();
+
   Map<String, dynamic>? _usuario;
+  List<Map<String, dynamic>> _publicaciones = [];
+
   bool _cargando = true;
   bool _editando = false;
+  bool _guardando = false;
   bool _enviandoSolicitud = false;
   bool _solicitudEnviada = false;
-
-  final _nombreController = TextEditingController();
-  final _apellidoController = TextEditingController();
-  final _telefonoController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _cargar();
-  }
-
-  Future<void> _cargar() async {
-    try {
-      final data = await _service.getPerfil();
-      setState(() {
-        _usuario = data;
-        _nombreController.text = data['nombre'] ?? '';
-        _apellidoController.text = data['apellido'] ?? '';
-        _telefonoController.text = data['telefono']?.toString() ?? '';
-        _cargando = false;
-      });
-    } catch (e) {
-      setState(() => _cargando = false);
-    }
-  }
-
-  Future<void> _guardarCambios() async {
-    try {
-      final data = await _service.actualizarUsuario(
-        nombre: _nombreController.text.trim(),
-        apellido: _apellidoController.text.trim(),
-        telefono: _telefonoController.text.trim(),
-      );
-
-      // Actualizar sesión local
-      final token = await SessionService.getToken();
-      final usuarioActual = await SessionService.getUsuario();
-      await SessionService.guardarSesion(
-        token ?? '',
-        {
-          ...?usuarioActual,
-          'nombre': data['nombre'],
-          'apellido': data['apellido'],
-          'telefono': data['telefono'],
-        },
-      );
-
-      setState(() {
-        _usuario = {...?_usuario, ...data};
-        _editando = false;
-      });
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Perfil actualizado correctamente'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  Future<void> _enviarSolicitud() async {
-    setState(() => _enviandoSolicitud = true);
-    // TODO: conectar cuando el backend tenga el endpoint de solicitudes
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() {
-      _enviandoSolicitud = false;
-      _solicitudEnviada = true;
-    });
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('¡Solicitud enviada! El administrador la revisará.'),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-
-  void _mostrarDialogoSolicitud() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          '¿Solicitar ser artista?',
-          style: TextStyle(
-              color: AppTheme.primaryCyan,
-              fontWeight: FontWeight.bold,
-              fontSize: 16),
-          textAlign: TextAlign.center,
-        ),
-        content: const Text(
-          'Se enviará una solicitud al administrador para cambiar tu rol.',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 13),
-        ),
-        actionsAlignment: MainAxisAlignment.center,
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancelar',
-                style: TextStyle(color: Colors.red)),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await _enviarSolicitud();
-            },
-            child: const Text('Sí, solicitar',
-                style: TextStyle(
-                    color: AppTheme.primaryCyan,
-                    fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
+    _cargarPerfil();
   }
 
   @override
@@ -154,341 +44,259 @@ class _PerfilScreenState extends State<PerfilScreen> {
     super.dispose();
   }
 
-  String _tituloPanel(int rol) {
-    switch (rol) {
-      case 3: return 'Panel Admin';
-      case 2: return 'Panel Artista';
-      default: return 'Panel Usuario';
+  Future<void> _cargarPerfil() async {
+    try {
+      setState(() {
+        _cargando = true;
+      });
+
+      final perfil = await PerfilService.obtenerPerfil();
+      final idUsuario = int.tryParse(perfil['id_usuario']?.toString() ?? '');
+
+      List<Map<String, dynamic>> publicaciones = [];
+      if (idUsuario != null) {
+        publicaciones = await PublicacionesService.getPublicacionesPorUsuario(idUsuario);
+      }
+
+      if (!mounted) return;
+
+      _llenarControllers(perfil);
+
+      setState(() {
+        _usuario = perfil;
+        _publicaciones = publicaciones;
+        _cargando = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _cargando = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().replaceAll('Exception: ', ''),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
+  }
+
+  void _llenarControllers(Map<String, dynamic> usuario) {
+    _nombreController.text = usuario['nombre']?.toString() ?? '';
+    _apellidoController.text = usuario['apellido']?.toString() ?? '';
+    _telefonoController.text = usuario['telefono']?.toString() ?? '';
+  }
+
+  void _toggleEditar() {
+    if (_editando && _usuario != null) {
+      _llenarControllers(_usuario!);
+    }
+
+    setState(() {
+      _editando = !_editando;
+    });
+  }
+
+  Future<void> _guardarCambios() async {
+    if (_usuario == null || _guardando) return;
+
+    final nombre = _nombreController.text.trim();
+    final apellido = _apellidoController.text.trim();
+    final telefonoTexto = _telefonoController.text.trim();
+
+    if (nombre.isEmpty || apellido.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('El nombre y el apellido son obligatorios.'),
+        ),
+      );
+      return;
+    }
+
+    int? telefono;
+    if (telefonoTexto.isNotEmpty) {
+      telefono = int.tryParse(telefonoTexto);
+
+      if (telefono == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('El teléfono debe contener solamente números.'),
+          ),
+        );
+        return;
+      }
+    }
+
+    try {
+      setState(() {
+        _guardando = true;
+      });
+
+      final perfilActualizado = await PerfilService.actualizarUsuario(
+        nombre: nombre,
+        apellido: apellido,
+        telefono: telefono,
+      );
+
+      await SessionService.guardarUsuario(perfilActualizado);
+
+      if (!mounted) return;
+
+      _llenarControllers(perfilActualizado);
+
+      setState(() {
+        _usuario = perfilActualizado;
+        _editando = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Perfil actualizado correctamente.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().replaceAll('Exception: ', ''),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _guardando = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _solicitarArtista() async {
+    if (_usuario == null || _enviandoSolicitud || _solicitudEnviada) return;
+
+  }
+
+  Future<void> _abrirMisPublicaciones() async {
+    if (_usuario == null) return;
+
+    final idUsuario = int.tryParse(_usuario!['id_usuario']?.toString() ?? '');
+    if (idUsuario == null) return;
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MisPublicacionesScreen(
+          idUsuario: idUsuario,
+        ),
+      ),
+    );
+
+    await _recargarPublicaciones();
+  }
+
+  Future<void> _recargarPublicaciones() async {
+    if (_usuario == null) return;
+
+    final idUsuario = int.tryParse(_usuario!['id_usuario']?.toString() ?? '');
+    if (idUsuario == null) return;
+
+    final publicaciones = await PublicacionesService.getPublicacionesPorUsuario(idUsuario);
+
+    if (!mounted) return;
+
+    setState(() {
+      _publicaciones = publicaciones;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     if (_cargando) {
       return const Scaffold(
-          body: Center(child: CircularProgressIndicator()));
+        body: Center(
+          child: CircularProgressIndicator(
+            color: AppTheme.primaryCyan,
+          ),
+        ),
+      );
     }
 
-    final nombre = _usuario?['nombre'] ?? 'Usuario';
-    final apellido = _usuario?['apellido'] ?? '';
-    final email = _usuario?['email'] ?? '';
-    final idRol = int.tryParse(_usuario?['id_rol'].toString() ?? '1') ?? 1;
-    final inicial = nombre.isNotEmpty ? nombre[0].toUpperCase() : 'U';
+    if (_usuario == null) {
+      return const Scaffold(
+        body: Center(
+          child: Text('No se pudo cargar el perfil.'),
+        ),
+      );
+    }
+
+    final nombre = _usuario!['nombre']?.toString() ?? '';
+    final apellido = _usuario!['apellido']?.toString() ?? '';
+    final email = _usuario!['email']?.toString() ?? '';
+    final idRol = int.tryParse(_usuario!['id_rol']?.toString() ?? '1') ?? 1;
+    final inicial = nombre.isNotEmpty ? nombre[0].toUpperCase() : '?';
 
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            GradientHeader(
-              height: 100,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Image.asset('assets/LOGO.png',
-                            height: 80, fit: BoxFit.contain),
-                        const SizedBox(width: 8),
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(_tituloPanel(idRol),
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13)),
-                            Text('Bienvenido, $nombre',
-                                style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 11)),
-                          ],
-                        ),
-                      ],
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back_ios,
-                          color: Colors.white),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    // TARJETA PERFIL
-                    Card(
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16)),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          children: [
-                            CircleAvatar(
-                              radius: 40,
-                              backgroundColor: AppTheme.primaryCyan
-                                  .withValues(alpha: 0.15),
-                              child: Text(inicial,
-                                  style: const TextStyle(
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppTheme.primaryCyan)),
-                            ),
-                            const SizedBox(height: 12),
-                            Text('$nombre $apellido',
-                                style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 4),
-                            Text(email,
-                                style: const TextStyle(
-                                    color: AppTheme.textSecondary,
-                                    fontSize: 13)),
-                            const SizedBox(height: 16),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: () =>
-                                    setState(() => _editando = !_editando),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppTheme.primaryCyan,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(20)),
-                                ),
-                                child: Text(_editando
-                                    ? 'Cancelar'
-                                    : 'Editar Perfil'),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // FORMULARIO EDICIÓN
-                    if (_editando)
-                      Card(
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16)),
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Editar información',
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
-                                      color: AppTheme.primaryCyan)),
-                              const SizedBox(height: 16),
-                              _Campo(
-                                label: 'Nombre',
-                                controller: _nombreController,
-                                icono: Icons.person_outline,
-                              ),
-                              const SizedBox(height: 12),
-                              _Campo(
-                                label: 'Apellido',
-                                controller: _apellidoController,
-                                icono: Icons.person_outline,
-                              ),
-                              const SizedBox(height: 12),
-                              _Campo(
-                                label: 'Teléfono',
-                                controller: _telefonoController,
-                                icono: Icons.phone_outlined,
-                                tipo: TextInputType.phone,
-                              ),
-                              const SizedBox(height: 20),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  onPressed: _guardarCambios,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppTheme.primaryCyan,
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(10)),
-                                  ),
-                                  child: const Text('Guardar cambios'),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                    const SizedBox(height: 16),
-
-                    // SOLICITAR SER ARTISTA — solo rol 1
-                    if (idRol == 1)
-                      Card(
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: BorderSide(
-                              color: AppTheme.primaryCyan
-                                  .withValues(alpha: 0.3)),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Row(
-                                children: [
-                                  Icon(Icons.brush_outlined,
-                                      color: AppTheme.primaryCyan,
-                                      size: 20),
-                                  SizedBox(width: 8),
-                                  Text('¿Quieres ser Artista?',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: AppTheme.primaryCyan)),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              const Text(
-                                'Solicita el cambio de rol al administrador.',
-                                style: TextStyle(
-                                    color: AppTheme.textSecondary,
-                                    fontSize: 13),
-                              ),
-                              const SizedBox(height: 12),
-                              if (_solicitudEnviada)
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green.shade50,
-                                    borderRadius:
-                                        BorderRadius.circular(10),
-                                    border: Border.all(
-                                        color: Colors.green.shade200),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.check_circle_outline,
-                                          color: Colors.green.shade600,
-                                          size: 18),
-                                      const SizedBox(width: 8),
-                                      const Expanded(
-                                        child: Text(
-                                          '¡Solicitud enviada! El administrador revisará tu solicitud.',
-                                          style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.green),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              else
-                                GestureDetector(
-                                  onTap: _enviandoSolicitud
-                                      ? null
-                                      : _mostrarDialogoSolicitud,
-                                  child: Text(
-                                    _enviandoSolicitud
-                                        ? 'Enviando...'
-                                        : 'Solicitar ser Artista',
-                                    style: TextStyle(
-                                      color: _enviandoSolicitud
-                                          ? Colors.grey
-                                          : AppTheme.primaryCyan,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-
-            const GradientHeader(
-              height: 50,
-              child: Center(
-                child: Text(
-                  '©2026 ArteNauta',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13),
-                ),
-              ),
-            ),
-          ],
-        ),
+      appBar: AppBar(
+        title: const Text('Mi Perfil'),
+        backgroundColor: AppTheme.primaryCyan,
+        foregroundColor: Colors.white,
       ),
-    );
-  }
-}
+      body: RefreshIndicator(
+        color: AppTheme.primaryCyan,
+        onRefresh: _cargarPerfil,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              PerfilHeader(
+                nombre: nombre,
+                apellido: apellido,
+                email: email,
+                inicial: inicial,
+                cantidadObras: _publicaciones.length,
+                cantidadSeguidores: 0,
+                editando: _editando,
+                onToggleEditar: _toggleEditar,
+              ),
 
-class _Stat extends StatelessWidget {
-  final String valor;
-  final String label;
-  const _Stat({required this.valor, required this.label});
+              if (_editando) ...[
+                const SizedBox(height: 16),
+                PerfilEditForm(
+                  nombreController: _nombreController,
+                  apellidoController: _apellidoController,
+                  telefonoController: _telefonoController,
+                  onGuardar: _guardando ? () {} : _guardarCambios,
+                ),
+              ],
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(valor,
-            style: const TextStyle(
-                fontSize: 20, fontWeight: FontWeight.bold)),
-        Text(label,
-            style: const TextStyle(
-                color: AppTheme.textSecondary, fontSize: 12)),
-      ],
-    );
-  }
-}
+              if (idRol == 2) ...[
+                const SizedBox(height: 16),
+                PublicacionesPropiasCard(
+                  onTapVerPublicaciones: _abrirMisPublicaciones,
+                ),
+              ],
 
-class _Campo extends StatelessWidget {
-  final String label;
-  final TextEditingController controller;
-  final IconData icono;
-  final TextInputType tipo;
+              if (idRol == 1) ...[
+                const SizedBox(height: 16),
+                SolicitudRolCard(
+                  enviandoSolicitud: _enviandoSolicitud,
+                  solicitudEnviada: _solicitudEnviada,
+                  onSolicitar: _solicitarArtista,
+                ),
+              ],
 
-  const _Campo({
-    required this.label,
-    required this.controller,
-    required this.icono,
-    this.tipo = TextInputType.text,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      keyboardType: tipo,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icono, color: AppTheme.primaryCyan),
-        border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10)),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(
-              color: AppTheme.primaryCyan, width: 2),
+              const SizedBox(height: 30),
+            ],
+          ),
         ),
       ),
     );

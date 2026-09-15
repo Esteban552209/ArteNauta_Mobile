@@ -5,75 +5,87 @@ import 'session_service.dart';
 
 class PerfilService {
 
-  Future<Map<String, String>> _headers() async {
+  static Future<Map<String, String>> _getAuthHeaders() async {
     final token = await SessionService.getToken();
     return {
       ...ApiConfig.headers,
-      'Authorization': 'Bearer $token',
+      if (token != null) 'Authorization': 'Bearer $token',
     };
   }
 
-  // GET /perfil — obtener perfil completo del usuario
-  Future<Map<String, dynamic>> getPerfil() async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/perfil');
+  // OBTENER PERFIL COMPLETO (GET /perfil)
+  static Future<Map<String, dynamic>> obtenerPerfil() async {
     try {
-      final response = await http.get(url, headers: await _headers());
-      if (response.statusCode != 200) {
-        throw Exception('Error al obtener perfil');
+      final headers = await _getAuthHeaders();
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/perfil'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        return Map<String, dynamic>.from(jsonDecode(response.body));
+      } else {
+        final body = jsonDecode(response.body);
+        throw Exception(body['error'] ?? 'Error al obtener el perfil.');
       }
-      return jsonDecode(response.body) as Map<String, dynamic>;
     } catch (e) {
-      throw Exception('Error de conexión: $e');
+      throw Exception('Error al conectar con el servidor: $e');
     }
   }
 
-  // PATCH /perfil/usuario — actualizar nombre, apellido y teléfono
-  Future<Map<String, dynamic>> actualizarUsuario({
+  // ACTUALIZAR DATOS DE USUARIO (PATCH /perfil/usuario)
+  static Future<Map<String, dynamic>> actualizarUsuario({
     required String nombre,
     required String apellido,
-    required String telefono,
+    required int? telefono,
   }) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/perfil/usuario');
     try {
+      final headers = await _getAuthHeaders();
       final response = await http.patch(
-        url,
-        headers: await _headers(),
+        Uri.parse('${ApiConfig.baseUrl}/perfil/usuario'),
+        headers: headers,
         body: jsonEncode({
           'nombre': nombre,
           'apellido': apellido,
           'telefono': telefono,
         }),
       );
-      if (response.statusCode != 200) {
-        throw Exception('Error al actualizar usuario');
+
+      if (response.statusCode == 200) {
+        return Map<String, dynamic>.from(jsonDecode(response.body));
+      } else {
+        final body = jsonDecode(response.body);
+        throw Exception(body['error'] ?? 'Error al actualizar el usuario.');
       }
-      return jsonDecode(response.body) as Map<String, dynamic>;
     } catch (e) {
-      throw Exception('Error de conexión: $e');
+      throw Exception('Error al conectar con el servidor: $e');
     }
   }
 
-  // PATCH /perfil — actualizar descripción y ocupación
-  Future<Map<String, dynamic>> actualizarPerfil({
-    required String descripcion,
-    required String ocupacion,
+  // ACTUALIZAR PERFIL EXTENDIDO (PATCH /perfil)
+  static Future<Map<String, dynamic>> actualizarPerfilExtendido({
+    String? descripcion,
+    String? ocupacion,
   }) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/perfil');
     try {
+      final headers = await _getAuthHeaders();
       final response = await http.patch(
-        url,
-        headers: await _headers(),
+        Uri.parse('${ApiConfig.baseUrl}/perfil'),
+        headers: headers,
         body: jsonEncode({
           'descripcion': descripcion,
           'ocupacion': ocupacion,
         }),
       );
-      if (response.statusCode != 200) {
-        throw Exception('Error al actualizar perfil');
+
+      if (response.statusCode == 200) {
+        return Map<String, dynamic>.from(jsonDecode(response.body));
+      } else {
+        final body = jsonDecode(response.body);
+        throw Exception(body['error'] ?? 'Error al actualizar la información del perfil.');
       }
-      return jsonDecode(response.body) as Map<String, dynamic>;
     } catch (e) {
-      throw Exception('Error de conexión: $e');
+      throw Exception('Error al conectar con el servidor: $e');
     }
   }
 }
