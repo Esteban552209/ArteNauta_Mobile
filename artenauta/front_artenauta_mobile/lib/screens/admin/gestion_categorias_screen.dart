@@ -1,8 +1,6 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../services/session_service.dart';
+import '../../services/admin/categorias_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../widgets/gradient_header.dart';
 
@@ -18,6 +16,7 @@ class _GestionCategoriasScreenState extends State<GestionCategoriasScreen> {
   bool _isLoading = true;
 
   final _buscarController = TextEditingController();
+  final CategoriasService _categoriasService = CategoriasService();
 
   @override
   void initState() {
@@ -31,39 +30,19 @@ class _GestionCategoriasScreenState extends State<GestionCategoriasScreen> {
       final String? token = await SessionService.getToken();
       if (token == null) throw Exception('No hay sesión activa');
 
-      final String baseUrl = dotenv.env['SUPABASE_URL']!;
-      final String anonKey = dotenv.env['SUPABASE_PUBLISHABLE_KEY']!;
-
-      Uri url = Uri.parse('$baseUrl/functions/v1/gestion_categorias');
-      Map<String, String> queryParams = {};
-      
-      if (_buscarController.text.isNotEmpty) queryParams['buscar'] = _buscarController.text;
-
-      if (queryParams.isNotEmpty) {
-        url = url.replace(queryParameters: queryParams);
-      }
-
-      final response = await http.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token', 'apikey': anonKey,
-        },
+      final data = await _categoriasService.getCategorias(
+        token,
+        buscar: _buscarController.text,
       );
-
-      final data = jsonDecode(response.body);
-
-      if (response.statusCode != 200) {
-        debugPrint("Status code: ${response.statusCode}");
-        debugPrint("Body del error: ${response.body}");
-        
-        final mensajeError = data['error'] ?? data['message'] ?? 'Error desconocido';
-        throw Exception(mensajeError);
-      }
 
       setState(() => _categorias = data);
     } catch (e) {
       debugPrint("Error GET Categorías: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al cargar: $e'), backgroundColor: Colors.red),
+        );
+      }
     } finally {
       setState(() => _isLoading = false);
     }
@@ -105,6 +84,7 @@ class _GestionCategoriasScreenState extends State<GestionCategoriasScreen> {
               style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryCyan),
               onPressed: () async {
                 Navigator.pop(ctx);
+
                 if (isEditing) {
                   await _actualizarCategoria(
                     idCategoria: categoria['id_categoria'],
@@ -132,34 +112,28 @@ class _GestionCategoriasScreenState extends State<GestionCategoriasScreen> {
   }) async {
     try {
       final String? token = await SessionService.getToken();
-      final String baseUrl = dotenv.env['SUPABASE_URL']!;
-      final url = Uri.parse('$baseUrl/functions/v1/gestion_categorias');
+      if (token == null) throw Exception('No hay sesión activa');
 
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
-          'nombre_categoria': nombre,
-          'descripcion': descripcion,
-        }),
+      await _categoriasService.crearCategoria(
+        token: token,
+        nombre: nombre,
+        descripcion: descripcion,
       );
 
-      if (response.statusCode == 201) {
-        _cargarCategorias();
+      _cargarCategorias();
+      
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Categoría creada correctamente'), backgroundColor: Colors.green),
         );
-      } else {
-        throw Exception(jsonDecode(response.body)['error']);
       }
     } catch (e) {
       debugPrint("Error POST: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al crear: $e'), backgroundColor: Colors.red),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al crear: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -170,35 +144,29 @@ class _GestionCategoriasScreenState extends State<GestionCategoriasScreen> {
   }) async {
     try {
       final String? token = await SessionService.getToken();
-      final String baseUrl = dotenv.env['SUPABASE_URL']!;
-      final url = Uri.parse('$baseUrl/functions/v1/gestion_categorias');
+      if (token == null) throw Exception('No hay sesión activa');
 
-      final response = await http.patch(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
-          'id_categoria': idCategoria,
-          'nombre_categoria': nombre,
-          'descripcion': descripcion,
-        }),
+      await _categoriasService.actualizarCategoria(
+        token: token,
+        idCategoria: idCategoria,
+        nombre: nombre,
+        descripcion: descripcion,
       );
 
-      if (response.statusCode == 200) {
-        _cargarCategorias();
+      _cargarCategorias();
+      
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Categoría actualizada correctamente'), backgroundColor: Colors.green),
         );
-      } else {
-        throw Exception(jsonDecode(response.body)['error']);
       }
     } catch (e) {
       debugPrint("Error PATCH: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al actualizar: $e'), backgroundColor: Colors.red),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al actualizar: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 

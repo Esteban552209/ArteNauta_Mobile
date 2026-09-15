@@ -1,7 +1,6 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../../services/admin/statistics_service.dart';
+import '../../services/session_service.dart'; 
 import '../../core/theme/app_theme.dart';
 import '../../widgets/gradient_header.dart';
 import '../../widgets/admin_drawer.dart';
@@ -20,6 +19,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   int _totalComentarios = 0;
   bool _isLoading = true;
 
+  final StatisticsService _statisticsService = StatisticsService();
+
   @override
   void initState() {
     super.initState();
@@ -27,13 +28,48 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   }
 
   Future<void> _cargarEstadisticas() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      String? tokenActual = await SessionService.getToken(); 
+
+      if (tokenActual == null || tokenActual.isEmpty) {
+        throw Exception('No hay sesión activa. Falta el token.');
+      }
+
+      final data = await _statisticsService.fetchEstadisticas(tokenActual);
+
+      setState(() {
+        _totalUsuarios = data['totalUsuarios'] ?? 0;
+        _totalArtistas = data['totalArtistas'] ?? 0;
+        _totalObras = data['totalPublicaciones'] ?? 0; 
+        _totalComentarios = data['totalComentarios'] ?? 0;
+        _isLoading = false;
+      });
+
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar datos: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      // endDrawer: const AdminDrawer(),
+      endDrawer: const AdminDrawer(),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

@@ -73,7 +73,6 @@ router.post("/auth/forgot-password", async (req, res) => {
 
         if (error) throw error;
 
-        // Siempre respondemos éxito por seguridad, para no revelar qué correos están registrados
         if (!usuarioEncontrado) {
             return res.status(200).json({ mensaje: "Si el correo está registrado, recibirás un enlace de recuperación." });
         }
@@ -136,11 +135,9 @@ router.post("/auth/reset-password", async (req, res) => {
 
         const email = decodificado.email;
 
-        // Encriptar la nueva clave
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
 
-        // Actualizar el usuario en Supabase
         const { error } = await supabase
             .from("usuarios")
             .update({ clave: hashedPassword })
