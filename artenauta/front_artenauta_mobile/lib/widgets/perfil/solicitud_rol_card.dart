@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:art_sweetalert_new/art_sweetalert_new.dart';
 import 'package:artenauta/core/theme/app_theme.dart';
 
 class SolicitudRolCard extends StatelessWidget {
@@ -12,6 +13,34 @@ class SolicitudRolCard extends StatelessWidget {
     required this.solicitudEnviada,
     required this.onSolicitar,
   });
+
+void _mostrarDialogo(BuildContext context) {
+  ArtSweetAlert.show(
+    context: context,
+    type: ArtAlertType.question,
+    title: const Text('¿Solicitar ser Artista?'),
+    content: const Text(
+      'Se enviará una solicitud al administrador para cambiar tu rol. ¿Deseas continuar?',
+    ),
+    actions: [
+      ArtAlertButton(
+        onPressed: () {
+          Navigator.pop(context);
+          onSolicitar();
+        },
+        backgroundColor: AppTheme.primaryCyan,
+        textColor: Colors.white,
+        child: const Text('Sí, solicitar'),
+      ),
+      ArtAlertButton(
+        onPressed: () => Navigator.pop(context),
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        child: const Text('Cancelar'),
+      ),
+    ],
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -55,11 +84,8 @@ class SolicitudRolCard extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.check_circle_outline,
-                      color: Colors.green.shade600,
-                      size: 18,
-                    ),
+                    Icon(Icons.check_circle_outline,
+                        color: Colors.green.shade600, size: 18),
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
@@ -72,11 +98,15 @@ class SolicitudRolCard extends StatelessWidget {
               )
             else
               GestureDetector(
-                onTap: enviandoSolicitud ? null : onSolicitar,
+                onTap: enviandoSolicitud
+                    ? null
+                    : () => _mostrarDialogo(context),
                 child: Text(
                   enviandoSolicitud ? 'Enviando...' : 'Solicitar ser Artista',
                   style: TextStyle(
-                    color: enviandoSolicitud ? Colors.grey : AppTheme.primaryCyan,
+                    color: enviandoSolicitud
+                        ? Colors.grey
+                        : AppTheme.primaryCyan,
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   ),

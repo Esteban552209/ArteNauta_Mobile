@@ -182,6 +182,38 @@ class _PerfilScreenState extends State<PerfilScreen> {
   Future<void> _solicitarArtista() async {
     if (_usuario == null || _enviandoSolicitud || _solicitudEnviada) return;
 
+    setState(() => _enviandoSolicitud = true);
+
+    try {
+      await PerfilService.enviarSolicitudArtista();
+
+      setState(() {
+        _enviandoSolicitud = false;
+        _solicitudEnviada = true;
+      });
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('¡Solicitud enviada! El administrador la revisará.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      setState(() => _enviandoSolicitud = false);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().replaceAll('Exception: ', ''),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Future<void> _abrirMisPublicaciones() async {

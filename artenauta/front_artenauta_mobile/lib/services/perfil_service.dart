@@ -4,7 +4,6 @@ import 'api_config.dart';
 import 'session_service.dart';
 
 class PerfilService {
-
   static Future<Map<String, String>> _getAuthHeaders() async {
     final token = await SessionService.getToken();
     return {
@@ -72,20 +71,64 @@ class PerfilService {
       final response = await http.patch(
         Uri.parse('${ApiConfig.baseUrl}/perfil'),
         headers: headers,
-        body: jsonEncode({
-          'descripcion': descripcion,
-          'ocupacion': ocupacion,
-        }),
+        body: jsonEncode({'descripcion': descripcion, 'ocupacion': ocupacion}),
       );
 
       if (response.statusCode == 200) {
         return Map<String, dynamic>.from(jsonDecode(response.body));
       } else {
         final body = jsonDecode(response.body);
-        throw Exception(body['error'] ?? 'Error al actualizar la información del perfil.');
+        throw Exception(
+          body['error'] ?? 'Error al actualizar la información del perfil.',
+        );
       }
     } catch (e) {
       throw Exception('Error al conectar con el servidor: $e');
+    }
+  }
+
+  // SOLICITAR SER ARTISTA (POST /notificaciones/solicitudes)
+  static Future<void> enviarSolicitudArtista() async {
+    try {
+      final usuario = await SessionService.getUsuario();
+      final idUsuario = usuario?['id_usuario'];
+      if (idUsuario == null) throw Exception('No hay sesión activa');
+
+      final headers = await _getAuthHeaders();
+
+      // Verificar si ya tiene solicitud pendiente
+      final checkRes = await http.get(
+        Uri.parse(
+          '${ApiConfig.baseUrl}/notificaciones/solicitudes/pendiente?id_usuario=$idUsuario',
+        ),
+        headers: headers,
+      );
+
+      if (checkRes.statusCode == 200) {
+        final body = jsonDecode(checkRes.body);
+        if (body['tieneSolicitud'] == true) {
+          throw Exception(
+            'Ya tienes una solicitud pendiente. Espera a que el administrador la revise.',
+          );
+        }
+      }
+
+      // Enviar solicitud
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/notificaciones/solicitudes'),
+        headers: headers,
+        body: jsonEncode({
+          'tipo_solicitud': 'artista',
+          'id_usuario': idUsuario,
+        }),
+      );
+
+      if (response.statusCode != 201) {
+        final body = jsonDecode(response.body);
+        throw Exception(body['error'] ?? 'Error al enviar la solicitud.');
+      }
+    } catch (e) {
+      throw Exception(e.toString().replaceAll('Exception: ', ''));
     }
   }
 }
