@@ -87,41 +87,56 @@ router.post('/notificaciones/solicitudes', verificarToken, async (req, res) => {
     const { tipo_solicitud, id_usuario } = req.body;
 
     try {
-        // Verificar si ya existe una pendiente antes de insertar
+        // 1. Verificar si ya tiene solicitud pendiente
         const { data: existente } = await supabase
             .from('solicitudes')
             .select('id_solicitud')
             .eq('id_usuario', id_usuario)
-            .eq('tipo_solicitud', tipo_solicitud)
+            .eq('tipo_solicitud', 'artista')
             .eq('estado_solicitud', 'Pendiente')
             .maybeSingle();
 
         if (existente) {
-            return res.status(400).json({ error: "Ya tienes una solicitud pendiente en proceso." });
+            return res.status(400).json({ error: 'Ya tienes una solicitud pendiente.' });
         }
 
+        // 2. Crear la solicitud
         const { data, error } = await supabase
             .from('solicitudes')
-            .insert([
-                {
-                    tipo_solicitud,
-                    id_usuario,
-                    estado_solicitud: 'Pendiente'
-                }
-            ])
+            .insert([{ tipo_solicitud, id_usuario, estado_solicitud: 'Pendiente' }])
             .select();
 
-        if (error) {
-            return res.status(400).json({ error: error.message });
+        if (error) return res.status(400).json({ error: error.message });
+
+        // 3. Obtener nombre del usuario
+        const { data: usuario } = await supabase
+            .from('usuarios')
+            .select('nombre, apellido')
+            .eq('id_usuario', id_usuario)
+            .single();
+
+        const nombre = usuario ? `${usuario.nombre} ${usuario.apellido}` : 'Alguien';
+
+        // 4. Notificar a todos los admins
+        const { data: admins } = await supabase
+            .from('usuarios')
+            .select('id_usuario')
+            .eq('id_rol', 3);
+
+        if (admins && admins.length > 0) {
+            const notifs = admins.map(a => ({
+                id_usuario: a.id_usuario,
+                asunto: `${nombre} quiere ser artista`,
+                tipo_notificacion: 'Informativo',
+                fecha_notificacion: new Date().toISOString(),
+            }));
+            await supabase.from('notificaciones').insert(notifs);
         }
 
-        res.status(201).json({
-            mensaje: "¡Solicitud creada con éxito!",
-            solicitud: data[0]
-        });
+        res.status(201).json({ mensaje: '¡Solicitud creada con éxito!', solicitud: data[0] });
 
     } catch (error) {
-        res.status(500).json({ error: "Error interno del servidor" });
+        res.status(500).json({ error: 'Error interno del servidor' });
     }
 });
 
@@ -221,7 +236,7 @@ router.patch("/notificaciones/solicitudes/:id/aprobar", verificarToken, async (r
                 .insert({
                     id_usuario,
                     asunto: "¡Tu solicitud para ser artista fue aprobada!",
-                    tipo_notificacion: "solicitud_aprobada",
+                    tipo_notificacion: "Informativo",
                     fecha_notificacion: new Date().toISOString(),
                 });
             if (errorNotif) throw errorNotif;
@@ -271,7 +286,7 @@ router.patch("/notificaciones/solicitudes/:id/rechazar", verificarToken, async (
                 .insert({
                     id_usuario,
                     asunto: "Tu solicitud para ser artista fue rechazada.",
-                    tipo_notificacion: "solicitud_rechazada",
+                    tipo_notificacion: "Informativo",
                     fecha_notificacion: new Date().toISOString(),
                 });
             if (e2) throw e2;
