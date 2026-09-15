@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../services/session_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../widgets/gradient_header.dart';
+import '../../services/api_config.dart';
+import '../../widgets/filtros_usuarios_dialog.dart';
 
 class GestionUsuariosScreen extends StatefulWidget {
   const GestionUsuariosScreen({super.key});
@@ -33,11 +34,9 @@ class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
       final String? token = await SessionService.getToken();
       if (token == null) throw Exception('No hay sesión activa');
 
-      final String baseUrl = dotenv.env['SUPABASE_URL']!;
-
-      Uri url = Uri.parse('$baseUrl/functions/v1/gestion_usuarios');
+      Uri url = Uri.parse('${ApiConfig.baseUrl}/usuarios');
       Map<String, String> queryParams = {};
-      
+
       if (_buscarController.text.isNotEmpty) queryParams['buscar'] = _buscarController.text;
       if (_filtroEstado != null) queryParams['estado'] = _filtroEstado!;
       if (_filtroRol != null) queryParams['rol'] = _filtroRol!;
@@ -49,20 +48,38 @@ class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
       final response = await http.get(
         url,
         headers: {
-          'Content-Type': 'application/json',
+          ...ApiConfig.headers,
           'Authorization': 'Bearer $token',
         },
       );
 
       final data = jsonDecode(response.body);
 
-      if (response.statusCode != 200) throw Exception(data['error']);
+      if (response.statusCode != 200) throw Exception(data['error'] ?? 'Error desconocido');
 
       setState(() => _usuarios = data);
     } catch (e) {
       debugPrint("Error GET Usuarios: $e");
     } finally {
       setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _abrirFiltros() async {
+    final resultados = await showDialog<Map<String, String?>>(
+      context: context,
+      builder: (context) => FiltrosUsuariosDialog(
+        estadoActual: _filtroEstado,
+        rolActual: _filtroRol,
+      ),
+    );
+
+    if (resultados != null) {
+      setState(() {
+        _filtroEstado = resultados['estado'];
+        _filtroRol = resultados['rol'];
+      });
+      _cargarUsuarios(); 
     }
   }
 
@@ -149,17 +166,16 @@ class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
   }) async {
     try {
       final String? token = await SessionService.getToken();
-      final String baseUrl = dotenv.env['SUPABASE_URL']!;
-      final url = Uri.parse('$baseUrl/functions/v1/gestion_usuarios');
+
+      final url = Uri.parse('${ApiConfig.baseUrl}/usuarios/$idUsuario');
 
       final response = await http.patch(
         url,
         headers: {
-          'Content-Type': 'application/json',
+          ...ApiConfig.headers,
           'Authorization': 'Bearer $token',
         },
         body: jsonEncode({
-          'id_usuario': idUsuario,
           'nombre': nombre,
           'apellido': apellido,
           'id_rol': idRol,
@@ -169,14 +185,17 @@ class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
 
       if (response.statusCode == 200) {
         _cargarUsuarios();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Usuario actualizado correctamente'), backgroundColor: Colors.green),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Usuario actualizado correctamente'), backgroundColor: Colors.green),
+          );
+        }
       }
     } catch (e) {
       debugPrint("Error PATCH: $e");
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -223,7 +242,7 @@ class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.filter_list, color: AppTheme.primaryCyan),
-                  onPressed: _cargarUsuarios,
+                  onPressed: _abrirFiltros, 
                 )
               ],
             ),
