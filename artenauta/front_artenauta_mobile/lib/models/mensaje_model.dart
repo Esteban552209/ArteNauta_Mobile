@@ -4,6 +4,7 @@ class MensajeModel {
   final DateTime fechaEnvio;
   final int idUsuario;
   final bool leido;
+  final bool eliminadoTodos;
 
   MensajeModel({
     required this.idMensaje,
@@ -11,6 +12,7 @@ class MensajeModel {
     required this.fechaEnvio,
     required this.idUsuario,
     this.leido = false,
+    this.eliminadoTodos = false,
   });
 
   factory MensajeModel.fromJson(Map<String, dynamic> json) {
@@ -20,6 +22,7 @@ class MensajeModel {
       fechaEnvio: DateTime.parse(json['fecha_envio']),
       idUsuario: json['id_usuario'] as int,
       leido: json['leido'] as bool? ?? false,
+      eliminadoTodos: json['eliminado_todos'] as bool? ?? false,
     );
   }
 }

@@ -33,7 +33,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
     Future<void> _cargarMensajes() async {
-    final lista = await ConversacionesService.getMensajes(widget.idConversacion);
+    final lista = await ConversacionesService.getMensajes(widget.idConversacion, widget.miId);
     setState(() {
       _mensajes = lista;
       _cargando = false;
