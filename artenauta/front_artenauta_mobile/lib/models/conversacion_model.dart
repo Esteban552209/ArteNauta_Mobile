@@ -2,8 +2,6 @@ class ConversacionModel {
   final int idConversacion;
   final int idUsuarioOtro;
   final String nombreOtro;
-  final String apellidoOtro;
-  final String emailOtro;
   final String? ultimoMensaje;
   final DateTime? fechaUltimoMensaje;
   final int noLeidos;
@@ -12,31 +10,23 @@ class ConversacionModel {
     required this.idConversacion,
     required this.idUsuarioOtro,
     required this.nombreOtro,
-    required this.apellidoOtro,
-    required this.emailOtro,
     this.ultimoMensaje,
     this.fechaUltimoMensaje,
     this.noLeidos = 0,
   });
 
-  String get nombreCompleto => '$nombreOtro $apellidoOtro'.trim();
+  String get nombreCompleto => nombreOtro;
 
-  factory ConversacionModel.fromParticipante(
-    Map<String, dynamic> json, {
-    String? ultimoMensaje,
-    DateTime? fechaUltimoMensaje,
-    int noLeidos = 0,
-  }) {
-    final usuario = json['usuarios'] as Map<String, dynamic>? ?? {};
+  factory ConversacionModel.fromJson(Map<String, dynamic> json) {
     return ConversacionModel(
       idConversacion: json['id_conversacion'] as int,
-      idUsuarioOtro: usuario['id_usuario'] ?? 0,
-      nombreOtro: usuario['nombre'] ?? '',
-      apellidoOtro: usuario['apellido'] ?? '',
-      emailOtro: usuario['email'] ?? '',
-      ultimoMensaje: ultimoMensaje,
-      fechaUltimoMensaje: fechaUltimoMensaje,
-      noLeidos: noLeidos,
+      idUsuarioOtro: json['id_usuario_otro'] as int,
+      nombreOtro: json['nombre_otro'] ?? 'Usuario',
+      ultimoMensaje: json['ultimo_mensaje'] as String?,
+      fechaUltimoMensaje: json['fecha_ultimo_mensaje'] != null
+          ? DateTime.parse(json['fecha_ultimo_mensaje'])
+          : null,
+      noLeidos: json['no_leidos'] as int? ?? 0,
     );
   }
 }
