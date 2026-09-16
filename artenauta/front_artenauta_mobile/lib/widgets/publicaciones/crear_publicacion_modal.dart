@@ -162,7 +162,7 @@ class _CrearPublicacionModalState extends State<CrearPublicacionModal> {
               _cargandoCategorias
                   ? const Center(child: CircularProgressIndicator())
                   : DropdownButtonFormField<int>(
-                      value: _categoriaSeleccionadaId,
+                      initialValue: _categoriaSeleccionadaId,
                       decoration: const InputDecoration(
                         labelText: 'Categoría',
                         border: OutlineInputBorder(),

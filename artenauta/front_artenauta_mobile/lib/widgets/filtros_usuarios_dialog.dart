@@ -34,7 +34,7 @@ class _FiltrosUsuariosDialogState extends State<FiltrosUsuariosDialog> {
         mainAxisSize: MainAxisSize.min,
         children: [
           DropdownButtonFormField<String?>(
-            value: _filtroEstado,
+            initialValue: _filtroEstado,
             decoration: const InputDecoration(labelText: 'Estado de Cuenta'),
             items: const [
               DropdownMenuItem(value: null, child: Text('Todos')),
@@ -45,7 +45,7 @@ class _FiltrosUsuariosDialogState extends State<FiltrosUsuariosDialog> {
           ),
           const SizedBox(height: 10),
           DropdownButtonFormField<String?>(
-            value: _filtroRol,
+            initialValue: _filtroRol,
             decoration: const InputDecoration(labelText: 'Rol de Usuario'),
             items: const [
               DropdownMenuItem(value: null, child: Text('Todos')),

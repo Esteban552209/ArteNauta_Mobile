@@ -169,7 +169,7 @@ class _GestionPublicacionesScreenState extends State<GestionPublicacionesScreen>
                           children: [
                             ListTile(
                               leading: CircleAvatar(
-                                backgroundColor: AppTheme.primaryCyan.withOpacity(0.2),
+                                backgroundColor: AppTheme.primaryCyan.withValues(alpha: 0.2),
                                 child: const Icon(Icons.person, color: AppTheme.primaryCyan),
                               ),
                               title: Text(usuario['nombre'] ?? 'Desconocido', style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -219,7 +219,7 @@ class _GestionPublicacionesScreenState extends State<GestionPublicacionesScreen>
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: AppTheme.primaryCyan.withOpacity(0.1),
+                                        color: AppTheme.primaryCyan.withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(10),
                                       ),
                                       child: Text(

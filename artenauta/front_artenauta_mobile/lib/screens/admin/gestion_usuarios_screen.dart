@@ -111,7 +111,7 @@ class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
                     ),
                     const SizedBox(height: 20),
                     DropdownButtonFormField<int>(
-                      value: idRol,
+                      initialValue: idRol,
                       decoration: const InputDecoration(labelText: 'Rol'),
                       items: const [
                         DropdownMenuItem(value: 1, child: Text('Usuario Final')),
@@ -124,7 +124,7 @@ class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
                     SwitchListTile(
                       title: const Text('Cuenta Activa'),
                       value: estadoCuenta,
-                      activeColor: AppTheme.primaryCyan,
+                      activeThumbColor: AppTheme.primaryCyan,
                       onChanged: (val) => setStateModal(() => estadoCuenta = val),
                     ),
                   ],
@@ -267,7 +267,7 @@ class _GestionUsuariosScreenState extends State<GestionUsuariosScreen> {
                         child: ListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           leading: CircleAvatar(
-                            backgroundColor: AppTheme.primaryCyan.withOpacity(0.2),
+                            backgroundColor: AppTheme.primaryCyan.withValues(alpha: 0.2),
                             child: Text(
                               u['nombre'].toString().substring(0, 1).toUpperCase(),
                               style: const TextStyle(color: AppTheme.primaryCyan, fontWeight: FontWeight.bold),

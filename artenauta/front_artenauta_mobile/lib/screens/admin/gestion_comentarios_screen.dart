@@ -146,7 +146,7 @@ class _GestionComentariosScreenState extends State<GestionComentariosScreen> {
                                 children: [
                                   CircleAvatar(
                                     radius: 16,
-                                    backgroundColor: AppTheme.primaryCyan.withOpacity(0.2),
+                                    backgroundColor: AppTheme.primaryCyan.withValues(alpha: 0.2),
                                     child: const Icon(Icons.person, color: AppTheme.primaryCyan, size: 16),
                                   ),
                                   const SizedBox(width: 8),

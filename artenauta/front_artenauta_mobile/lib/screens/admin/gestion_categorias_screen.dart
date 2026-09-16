@@ -245,7 +245,7 @@ class _GestionCategoriasScreenState extends State<GestionCategoriasScreen> {
                         child: ListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           leading: CircleAvatar(
-                            backgroundColor: AppTheme.primaryCyan.withOpacity(0.2),
+                            backgroundColor: AppTheme.primaryCyan.withValues(alpha: 0.2),
                             child: const Icon(Icons.category, color: AppTheme.primaryCyan),
                           ),
                           title: Text(c['nombre_categoria'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),

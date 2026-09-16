@@ -145,7 +145,7 @@ class PublicacionesService {
         body: jsonEncode({
           'titulo': titulo,
           'descripcion': descripcion,
-          if (precio != null) 'precio': precio,
+          'precio': ?precio,
         }),
       );
 
