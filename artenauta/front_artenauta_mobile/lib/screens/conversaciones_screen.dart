@@ -5,6 +5,8 @@ import '../services/conversaciones_service.dart';
 import '../services/session_service.dart';
 import '../widgets/gradient_header.dart';
 import 'chat_screen.dart';
+import '../widgets/conversaciones/conversaciones_item.dart';
+import '../widgets/conversaciones/buscar_usuario_item.dart';
 
 class ConversacionesScreen extends StatefulWidget {
   const ConversacionesScreen({super.key});
@@ -181,19 +183,18 @@ class _ConversacionesScreenState extends State<ConversacionesScreen> {
   Widget _listaResultados() {
     if (_resultadosBusqueda.isEmpty) {
       return const Center(
-        child: Text('Sin resultados', style: TextStyle(color: Colors.grey)),
-      );
+          child: Text('Sin resultados', style: TextStyle(color: Colors.grey)));
     }
     return ListView.builder(
       itemCount: _resultadosBusqueda.length,
       itemBuilder: (_, i) {
         final u = _resultadosBusqueda[i];
-        final nombre = '${u['nombre']} ${u['apellido']}';
-        return ListTile(
-          leading: const CircleAvatar(child: Icon(Icons.person)),
-          title: Text(nombre),
-          subtitle: Text(u['email'] ?? ''),
-          onTap: () => _abrirOCrearConversacion(u['id_usuario'] as int, nombre),
+        return BuscadorUsuarioItem(
+          usuario: u,
+          onTap: () => _abrirOCrearConversacion(
+            u['id_usuario'] as int,
+            '${u['nombre']} ${u['apellido']}',
+          ),
         );
       },
     );
@@ -218,13 +219,10 @@ class _ConversacionesScreenState extends State<ConversacionesScreen> {
     return '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')}';
   }
 
-  Widget _listaConversaciones() {
+    Widget _listaConversaciones() {
     if (_conversaciones.isEmpty) {
       return const Center(
-        child: Text(
-          'Aún no tienes conversaciones',
-          style: TextStyle(color: Colors.grey),
-        ),
+        child: Text('Aún no tienes conversaciones', style: TextStyle(color: Colors.grey)),
       );
     }
     return RefreshIndicator(
@@ -233,59 +231,8 @@ class _ConversacionesScreenState extends State<ConversacionesScreen> {
         itemCount: _conversaciones.length,
         itemBuilder: (_, i) {
           final c = _conversaciones[i];
-          final tieneNoLeidos = c.noLeidos > 0;
-          return ListTile(
-            leading: const CircleAvatar(child: Icon(Icons.person)),
-            title: Text(
-              c.nombreCompleto,
-              style: TextStyle(
-                fontWeight: tieneNoLeidos ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-            subtitle: c.ultimoMensaje == null
-                ? null
-                : Text(
-                    c.ultimoMensaje!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: tieneNoLeidos ? Colors.black87 : Colors.grey,
-                      fontWeight: tieneNoLeidos ? FontWeight.w600 : FontWeight.normal,
-                    ),
-                  ),
-            trailing: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  _formatoFecha(c.fechaUltimoMensaje),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: tieneNoLeidos ? AppTheme.primaryCyan : Colors.grey,
-                    fontWeight: tieneNoLeidos ? FontWeight.bold : FontWeight.normal,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                if (tieneNoLeidos)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryCyan,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    constraints: const BoxConstraints(minWidth: 20),
-                    child: Text(
-                      c.noLeidos > 99 ? '99+' : '${c.noLeidos}',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+          return ConversacionItem(
+            conversacion: c,
             onTap: () async {
               await Navigator.push(
                 context,

@@ -312,7 +312,7 @@ class _MisPublicacionesScreenState
                 width: double.infinity,
                 fit: BoxFit.cover,
                 errorBuilder:
-                    (_, __, ___) =>
+                    (_, _, _) =>
                         const SizedBox
                             .shrink(),
               ),

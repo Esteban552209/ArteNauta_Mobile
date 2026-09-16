@@ -215,6 +215,7 @@ class _ComentariosModalState extends State<ComentariosModal> {
                           final idComentario = comentario['id_comentario'];
                           final idAutor = comentario['id_usuario_final'] ??
                               comentario['id_usuario'];
+                          return null;
 
                           // return ComentarioItem(
                           //   comentario: comentario,

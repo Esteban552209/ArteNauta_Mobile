@@ -1,206 +1,123 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'api_config.dart';
 import '../models/conversacion_model.dart';
 import '../models/mensaje_model.dart';
 
 class ConversacionesService {
-  static final _client = Supabase.instance.client;
-
-  // Lista de conversaciones del usuario logueado, con último mensaje y no leídos
+  // Lista de conversaciones del usuario logueado
   static Future<List<ConversacionModel>> getConversaciones(int idUsuario) async {
-    final misParticipaciones = await _client
-        .from('participantes')
-        .select('id_conversacion')
-        .eq('id_usuario', idUsuario);
+    final url = Uri.parse('${ApiConfig.baseUrl}/conversaciones/usuario/$idUsuario');
+    final response = await http.get(url, headers: await ApiConfig.headersConToken());
 
-    final idsConversaciones = (misParticipaciones as List)
-        .map((e) => e['id_conversacion'] as int)
-        .toList();
-
-    if (idsConversaciones.isEmpty) return [];
-
-    // El "otro" participante de cada conversación (no yo)
-    final otros = await _client
-        .from('participantes')
-        .select('id_conversacion, usuarios(id_usuario, nombre, apellido, email)')
-        .inFilter('id_conversacion', idsConversaciones)
-        .neq('id_usuario', idUsuario);
-
-    // Todos los mensajes de esas conversaciones, más recientes primero
-    final mensajes = await _client
-        .from('mensajes')
-        .select('id_conversacion, contenido, fecha_envio, id_usuario, leido')
-        .inFilter('id_conversacion', idsConversaciones)
-        .order('fecha_envio', ascending: false);
-
-    final ultimoPorConversacion = <int, Map<String, dynamic>>{};
-    final noLeidosPorConversacion = <int, int>{};
-
-    for (final m in (mensajes as List)) {
-      final idConv = m['id_conversacion'] as int;
-
-      // El primero que aparece por conversación (orden descendente) es el más reciente
-      ultimoPorConversacion.putIfAbsent(idConv, () => m as Map<String, dynamic>);
-
-      final esDeOtro = m['id_usuario'] != idUsuario;
-      final noLeido = m['leido'] == false;
-      if (esDeOtro && noLeido) {
-        noLeidosPorConversacion[idConv] = (noLeidosPorConversacion[idConv] ?? 0) + 1;
-      }
+    if (response.statusCode != 200) {
+      throw Exception('Error al cargar conversaciones: ${response.body}');
     }
 
-    final lista = (otros as List).map((e) {
-      final map = e as Map<String, dynamic>;
-      final idConv = map['id_conversacion'] as int;
-      final ultimo = ultimoPorConversacion[idConv];
-      return ConversacionModel.fromParticipante(
-        map,
-        ultimoMensaje: ultimo?['contenido'] as String?,
-        fechaUltimoMensaje:
-            ultimo != null ? DateTime.parse(ultimo['fecha_envio']) : null,
-        noLeidos: noLeidosPorConversacion[idConv] ?? 0,
-      );
-    }).toList();
-
-    // Las más recientes primero, igual que WhatsApp
-    lista.sort((a, b) {
-      if (a.fechaUltimoMensaje == null) return 1;
-      if (b.fechaUltimoMensaje == null) return -1;
-      return b.fechaUltimoMensaje!.compareTo(a.fechaUltimoMensaje!);
-    });
-
-    return lista;
+    final data = jsonDecode(response.body) as List;
+    return data
+        .map((e) => ConversacionModel.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
-  // Marca como leídos todos los mensajes de la otra persona en esta conversación
-  static Future<void> marcarComoLeidos(int idConversacion, int miId) async {
-    await _client
-        .from('mensajes')
-        .update({'leido': true})
-        .eq('id_conversacion', idConversacion)
-        .neq('id_usuario', miId)
-        .eq('leido', false);
-  }
-
-  // Buscar usuarios por correo para iniciar una conversación nueva
+  // Buscar usuario exacto por correo (según lo que soporta el backend hoy)
   static Future<List<Map<String, dynamic>>> buscarUsuarioPorEmail(
     String query,
     int idUsuarioActual,
   ) async {
     if (query.trim().isEmpty) return [];
-    final data = await _client
-        .from('usuarios')
-        .select('id_usuario, nombre, apellido, email')
-        .ilike('email', '%$query%')
-        .neq('id_usuario', idUsuarioActual)
-        .limit(10);
-    return List<Map<String, dynamic>>.from(data);
-  }
+    final url = Uri.parse('${ApiConfig.baseUrl}/usuarios/buscar?email=$query');
+    final response = await http.get(url, headers: await ApiConfig.headersConToken());
 
-  // Busca si ya existe una conversación entre dos usuarios
-  static Future<int?> buscarConversacionExistente(
-    int idUsuario1,
-    int idUsuario2,
-  ) async {
-    final misConversaciones = await _client
-        .from('participantes')
-        .select('id_conversacion')
-        .eq('id_usuario', idUsuario1);
+    if (response.statusCode != 200) return [];
 
-    final ids = (misConversaciones as List)
-        .map((e) => e['id_conversacion'] as int)
-        .toList();
-
-    if (ids.isEmpty) return null;
-
-    final match = await _client
-        .from('participantes')
-        .select('id_conversacion')
-        .inFilter('id_conversacion', ids)
-        .eq('id_usuario', idUsuario2)
-        .maybeSingle();
-
-    return match?['id_conversacion'] as int?;
+    final data = jsonDecode(response.body);
+    if (data == null) return [];
+    final usuario = data as Map<String, dynamic>;
+    if (usuario['id_usuario'] == idUsuarioActual) return [];
+    return [usuario];
   }
 
   // Crea (o reutiliza) una conversación entre dos usuarios
   static Future<int> crearConversacion(int idUsuario1, int idUsuario2) async {
-    final existente = await buscarConversacionExistente(idUsuario1, idUsuario2);
-    if (existente != null) return existente;
+    final url = Uri.parse('${ApiConfig.baseUrl}/conversaciones');
+    final response = await http.post(
+      url,
+      headers: await ApiConfig.headersConToken(),
+      body: jsonEncode({'id_usuario_1': idUsuario1, 'id_usuario_2': idUsuario2}),
+    );
 
-    final nueva = await _client
-        .from('conversaciones')
-        .insert({'fecha_creacion': DateTime.now().toIso8601String()})
-        .select('id_conversacion')
-        .single();
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Error al crear conversación: ${response.body}');
+    }
 
-    final idConversacion = nueva['id_conversacion'] as int;
-
-    await _client.from('participantes').insert([
-      {'id_conversacion': idConversacion, 'id_usuario': idUsuario1},
-      {'id_conversacion': idConversacion, 'id_usuario': idUsuario2},
-    ]);
-
-    return idConversacion;
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    return data['id_conversacion'] as int;
   }
 
-  static Future<List<MensajeModel>> getMensajes(int idConversacion) async {
-    final data = await _client
-        .from('mensajes')
-        .select()
-        .eq('id_conversacion', idConversacion)
-        .order('fecha_envio', ascending: true);
+  // Trae los mensajes de una conversación (excluye ocultos-para-mí)
+  static Future<List<MensajeModel>> getMensajes(int idConversacion, int miId) async {
+    final url = Uri.parse(
+        '${ApiConfig.baseUrl}/mensajes/$idConversacion?id_usuario=$miId');
+    final response = await http.get(url, headers: await ApiConfig.headersConToken());
 
-    return (data as List)
+    if (response.statusCode != 200) {
+      throw Exception('Error al cargar mensajes: ${response.body}');
+    }
+
+    final data = jsonDecode(response.body) as List;
+    return data
         .map((e) => MensajeModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 
   static Future<void> enviarMensaje({
-  required int idConversacion,
-  required int idUsuario,
-  required String contenido,
-}) async {
-  // 1. Insertar el mensaje
-  await _client.from('mensajes').insert({
-    'id_conversacion': idConversacion,
-    'id_usuario': idUsuario,
-    'contenido': contenido,
-    'fecha_envio': DateTime.now().toUtc().toIso8601String(),
-  });
+    required int idConversacion,
+    required int idUsuario,
+    required String contenido,
+  }) async {
+    final url = Uri.parse('${ApiConfig.baseUrl}/mensajes');
+    final response = await http.post(
+      url,
+      headers: await ApiConfig.headersConToken(),
+      body: jsonEncode({
+        'id_conversacion': idConversacion,
+        'id_usuario': idUsuario,
+        'contenido': contenido,
+      }),
+    );
 
-  // 2. Buscar al otro participante de la conversación
-  final otros = await _client
-      .from('participantes')
-      .select('id_usuario')
-      .eq('id_conversacion', idConversacion)
-      .neq('id_usuario', idUsuario);
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Error al enviar mensaje: ${response.body}');
+    }
+  }
 
-  if ((otros as List).isEmpty) return;
+  // Marca como leídos los mensajes del otro en esta conversación
+  static Future<void> marcarComoLeidos(int idConversacion, int miId) async {
+    final url = Uri.parse('${ApiConfig.baseUrl}/mensajes/leidos');
+    await http.patch(
+      url,
+      headers: await ApiConfig.headersConToken(),
+      body: jsonEncode({'id_conversacion': idConversacion, 'id_usuario': miId}),
+    );
+  }
 
-  final idReceptor = otros[0]['id_usuario'] as int;
+  // Eliminar mensaje solo para mí
+  static Future<void> eliminarMensajeParaMi(int idMensaje, int miId) async {
+    final url = Uri.parse(
+        '${ApiConfig.baseUrl}/mensajes/$idMensaje?modo=mi&id_usuario=$miId');
+    await http.delete(url, headers: await ApiConfig.headersConToken());
+  }
 
-  // 3. Obtener nombre del remitente
-  final remitente = await _client
-      .from('usuarios')
-      .select('nombre')
-      .eq('id_usuario', idUsuario)
-      .single();
+  // Eliminar mensaje para todos
+  static Future<void> eliminarMensajeParaTodos(int idMensaje) async {
+    final url = Uri.parse('${ApiConfig.baseUrl}/mensajes/$idMensaje?modo=todos');
+    await http.delete(url, headers: await ApiConfig.headersConToken());
+  }
 
-  final nombre = remitente['nombre'] ?? 'Alguien';
-
-  // 4. Insertar notificación al receptor
-  await _client.from('notificaciones').insert({
-    'id_usuario': idReceptor,
-    'asunto': '$nombre te envió un mensaje',
-    'tipo_notificacion': 'Mensaje',
-    'fecha_notificacion': DateTime.now().toUtc().toIso8601String(),
-  });
-}
-
-  // Borra mensajes y participantes antes de la conversación (por si no hay ON DELETE CASCADE)
+  // Eliminar conversación completa
   static Future<void> eliminarConversacion(int idConversacion) async {
-    await _client.from('mensajes').delete().eq('id_conversacion', idConversacion);
-    await _client.from('participantes').delete().eq('id_conversacion', idConversacion);
-    await _client.from('conversaciones').delete().eq('id_conversacion', idConversacion);
+    final url = Uri.parse('${ApiConfig.baseUrl}/conversaciones/$idConversacion');
+    await http.delete(url, headers: await ApiConfig.headersConToken());
   }
 }

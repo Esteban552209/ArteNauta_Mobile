@@ -14,7 +14,6 @@ class ReaccionesService {
 
   /// 1. POST: Alternar Like (Toggle)
   Future<bool> toggleLike({required int idPublicacion}) async {
-
     final url = Uri.parse('${ApiConfig.baseUrl}/publicaciones/$idPublicacion/like');
 
     try {
@@ -43,9 +42,42 @@ class ReaccionesService {
         );
       }
 
-      return decodedResponse['registrado'] ?? false;
+      final bool dioLike = decodedResponse['registrado'] ?? false;
+
+      // Si el usuario dio 'Like' (true), enviamos la notificación
+      if (dioLike) {
+        await _notificarLike(
+          idPublicacion: idPublicacion,
+          idUsuario: idUsuario,
+          nombreUsuario: usuario?['nombre'] ?? 'Alguien',
+        );
+      }
+
+      return dioLike;
     } catch (e) {
       throw Exception('Error al procesar el me gusta: $e');
+    }
+  }
+
+  /// Envía la notificación de Like al backend
+  Future<void> _notificarLike({
+    required int idPublicacion,
+    required int idUsuario,
+    required String nombreUsuario,
+  }) async {
+    try {
+      final headers = await _getAuthHeaders();
+      await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/notificaciones/like'),
+        headers: headers,
+        body: jsonEncode({
+          'id_publicacion': idPublicacion,
+          'id_usuario': idUsuario,
+          'nombre_usuario': nombreUsuario,
+        }),
+      );
+    } catch (e) {
+      // Ignora si la notificación falla para no pausar el flujo
     }
   }
 

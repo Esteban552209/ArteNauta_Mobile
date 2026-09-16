@@ -24,7 +24,7 @@ router.get("/usuarios/buscar", verificarToken, async (req, res) => {
     }
 });
 
-// GET Buscar conversacion de un ID
+// GET Listar conversaciones del usuario, con último mensaje y no leídos
 router.get("/conversaciones/usuario/:id_usuario", verificarToken, async (req, res) => {
     try {
         const id_usuario = parseInt(req.params.id_usuario);
@@ -52,13 +52,48 @@ router.get("/conversaciones/usuario/:id_usuario", verificarToken, async (req, re
 
         if (err2) throw err2;
 
-        const resultado = otrosParticipantes.map(p => ({
-            id_conversacion: p.id_conversacion,
-            id_usuario_otro: p.id_usuario,
-            nombre_otro: p.usuarios?.nombre
-                ? `${p.usuarios.nombre} ${p.usuarios.apellido || ""}`.trim()
-                : "Usuario"
-        }));
+        // Traer todos los mensajes de esas conversaciones para calcular último + no leídos
+        const { data: mensajes, error: err3 } = await supabase
+            .from("mensajes")
+            .select("id_conversacion, contenido, fecha_envio, id_usuario, leido")
+            .in("id_conversacion", idsConversaciones)
+            .order("fecha_envio", { ascending: false });
+
+        if (err3) throw err3;
+
+        const ultimoPorConversacion = {};
+        const noLeidosPorConversacion = {};
+
+        for (const m of mensajes || []) {
+            if (!ultimoPorConversacion[m.id_conversacion]) {
+                ultimoPorConversacion[m.id_conversacion] = m;
+            }
+            if (m.id_usuario !== id_usuario && m.leido === false) {
+                noLeidosPorConversacion[m.id_conversacion] =
+                    (noLeidosPorConversacion[m.id_conversacion] || 0) + 1;
+            }
+        }
+
+        const resultado = otrosParticipantes.map(p => {
+            const ultimo = ultimoPorConversacion[p.id_conversacion];
+            return {
+                id_conversacion: p.id_conversacion,
+                id_usuario_otro: p.id_usuario,
+                nombre_otro: p.usuarios?.nombre
+                    ? `${p.usuarios.nombre} ${p.usuarios.apellido || ""}`.trim()
+                    : "Usuario",
+                ultimo_mensaje: ultimo ? ultimo.contenido : null,
+                fecha_ultimo_mensaje: ultimo ? ultimo.fecha_envio : null,
+                no_leidos: noLeidosPorConversacion[p.id_conversacion] || 0,
+            };
+        });
+
+        // Más recientes primero
+        resultado.sort((a, b) => {
+            if (!a.fecha_ultimo_mensaje) return 1;
+            if (!b.fecha_ultimo_mensaje) return -1;
+            return new Date(b.fecha_ultimo_mensaje) - new Date(a.fecha_ultimo_mensaje);
+        });
 
         res.status(200).json(resultado);
     } catch (error) {
@@ -66,7 +101,7 @@ router.get("/conversaciones/usuario/:id_usuario", verificarToken, async (req, re
     }
 });
 
-// Iniciar la conversacion con Validacion de existencia
+// POST Iniciar la conversacion con validación de existencia
 router.post("/conversaciones", verificarToken, async (req, res) => {
     try {
         const { id_usuario_1, id_usuario_2 } = req.body;
@@ -100,20 +135,50 @@ router.post("/conversaciones", verificarToken, async (req, res) => {
     }
 });
 
-// GET Muestra mensajes de una conversacion
-router.get("/mensajes/:id_conversacion", verificarToken, async (req, res) => {
+// DELETE Eliminar conversación completa
+router.delete("/conversaciones/:id_conversacion", verificarToken, async (req, res) => {
     try {
         const { id_conversacion } = req.params;
-        const { data, error } = await supabase
-            .from("mensajes").select("*").eq("id_conversacion", id_conversacion).order("fecha_envio", { ascending: true });
+
+        await supabase.from("mensajes").delete().eq("id_conversacion", id_conversacion);
+        await supabase.from("participantes").delete().eq("id_conversacion", id_conversacion);
+        const { error } = await supabase.from("conversaciones").delete().eq("id_conversacion", id_conversacion);
+
         if (error) throw error;
-        res.status(200).json(data || []);
+        res.status(200).json({ ok: true });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-// POST Crea notificaciones de los mensajes
+// GET Muestra mensajes de una conversacion (excluye los ocultos-para-mí)
+router.get("/mensajes/:id_conversacion", verificarToken, async (req, res) => {
+    try {
+        const { id_conversacion } = req.params;
+        const { id_usuario } = req.query;
+
+        let idsOcultos = [];
+        if (id_usuario) {
+            const { data: ocultos, error: errOcultos } = await supabase
+                .from("mensajes_ocultos")
+                .select("id_mensaje")
+                .eq("id_usuario", id_usuario);
+            if (errOcultos) throw errOcultos;
+            idsOcultos = (ocultos || []).map(o => o.id_mensaje);
+        }
+
+        const { data, error } = await supabase
+            .from("mensajes").select("*").eq("id_conversacion", id_conversacion).order("fecha_envio", { ascending: true });
+        if (error) throw error;
+
+        const filtrados = (data || []).filter(m => !idsOcultos.includes(m.id_mensaje));
+        res.status(200).json(filtrados);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// POST Crea mensaje y notifica al otro participante
 router.post("/mensajes", verificarToken, async (req, res) => {
     try {
         const { id_conversacion, id_usuario, contenido } = req.body;
@@ -124,11 +189,12 @@ router.post("/mensajes", verificarToken, async (req, res) => {
 
         const { data: nuevoMensaje, error: errorMensaje } = await supabase
             .from("mensajes")
-            .insert([{ 
-                id_conversacion, 
-                id_usuario, 
-                contenido, 
-                fecha_envio: new Date().toISOString() 
+            .insert([{
+                id_conversacion,
+                id_usuario,
+                contenido,
+                fecha_envio: new Date().toISOString(),
+                leido: false
             }])
             .select()
             .single();
@@ -139,7 +205,7 @@ router.post("/mensajes", verificarToken, async (req, res) => {
             .from("participantes")
             .select("id_usuario")
             .eq("id_conversacion", id_conversacion)
-            .neq("id_usuario", id_usuario); 
+            .neq("id_usuario", id_usuario);
 
         if (errorParticipantes) throw errorParticipantes;
 
@@ -149,9 +215,9 @@ router.post("/mensajes", verificarToken, async (req, res) => {
             const { error: errorNotif } = await supabase
                 .from("notificaciones")
                 .insert({
-                    id_usuario: idReceptor, 
+                    id_usuario: idReceptor,
                     asunto: "Tienes un nuevo mensaje en el chat",
-                    tipo_notificacion: "Mensaje", 
+                    tipo_notificacion: "Mensaje",
                     fecha_notificacion: new Date().toISOString()
                 });
 
@@ -162,6 +228,56 @@ router.post("/mensajes", verificarToken, async (req, res) => {
 
         res.status(201).json(nuevoMensaje);
 
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// PATCH Marcar mensajes de la otra persona como leídos
+router.patch("/mensajes/leidos", verificarToken, async (req, res) => {
+    try {
+        const { id_conversacion, id_usuario } = req.body;
+        if (!id_conversacion || !id_usuario) return res.status(400).json({ error: "Faltan campos" });
+
+        const { error } = await supabase
+            .from("mensajes")
+            .update({ leido: true })
+            .eq("id_conversacion", id_conversacion)
+            .neq("id_usuario", id_usuario)
+            .eq("leido", false);
+
+        if (error) throw error;
+        res.status(200).json({ ok: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// DELETE Eliminar un mensaje: ?modo=mi|todos
+router.delete("/mensajes/:id_mensaje", verificarToken, async (req, res) => {
+    try {
+        const { id_mensaje } = req.params;
+        const { modo, id_usuario } = req.query;
+
+        if (modo === "mi") {
+            if (!id_usuario) return res.status(400).json({ error: "id_usuario requerido" });
+            const { error } = await supabase
+                .from("mensajes_ocultos")
+                .insert({ id_mensaje, id_usuario });
+            if (error) throw error;
+            return res.status(200).json({ ok: true, modo: "mi" });
+        }
+
+        if (modo === "todos") {
+            const { error } = await supabase
+                .from("mensajes")
+                .update({ eliminado_todos: true, contenido: "" })
+                .eq("id_mensaje", id_mensaje);
+            if (error) throw error;
+            return res.status(200).json({ ok: true, modo: "todos" });
+        }
+
+        return res.status(400).json({ error: "modo debe ser 'mi' o 'todos'" });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

@@ -1,10 +1,19 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'api_config.dart';
 import 'session_service.dart';
 
 class NotificacionesService {
-  static final SupabaseClient _supabase = Supabase.instance.client;
   static const String _keyUltimaVista = 'notif_ultima_vista';
+
+  static Future<Map<String, String>> _headers() async {
+    final token = await SessionService.getToken();
+    return {
+      ...ApiConfig.headers,
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
 
   /// Guarda la fecha actual en UTC como última vista
   static Future<void> marcarComoVistas() async {
@@ -15,148 +24,97 @@ class NotificacionesService {
     );
   }
 
-  /// Obtiene cuántas notificaciones son nuevas desde la última fecha registrada
+  /// Cuenta notificaciones nuevas desde la última visita
   static Future<int> contarNuevas() async {
     try {
+      final todas = await getNotificaciones();
       final prefs = await SharedPreferences.getInstance();
       final ultimaVista = prefs.getString(_keyUltimaVista);
 
-      final usuario = await SessionService.getUsuario();
-      final idUsuario = usuario?['id_usuario'];
-      if (idUsuario == null) return 0;
+      if (ultimaVista == null) return todas.length;
 
-      // 1. Inicia la consulta filtrando por usuario
-      var query = _supabase
-          .from('notificaciones')
-          .select('id_notificacion')
-          .eq('id_usuario', idUsuario);
-
-      // 2. Si existe marca de tiempo previa, filtra solo las posteriores (gt = greater than)
-      if (ultimaVista != null) {
-        query = query.gt('fecha_notificacion', ultimaVista);
-      }
-
-      // 3. Ejecuta la consulta
-      final response = await query;
-      return (response as List).length;
+      final fechaVista = DateTime.parse(ultimaVista);
+      return todas.where((n) {
+        final fecha = DateTime.tryParse(
+            n['fecha_notificacion']?.toString() ?? '');
+        return fecha != null && fecha.isAfter(fechaVista);
+      }).length;
     } catch (e) {
       return 0;
     }
   }
 
-  /// GET: Obtener notificaciones del usuario logueado
+  /// GET: notificaciones del usuario logueado
   static Future<List<Map<String, dynamic>>> getNotificaciones() async {
     try {
       final usuario = await SessionService.getUsuario();
       final idUsuario = usuario?['id_usuario'];
       if (idUsuario == null) return [];
 
-      final response = await _supabase
-          .from('notificaciones')
-          .select('*')
-          .eq('id_usuario', idUsuario)
-          .order('fecha_notificacion', ascending: false)
-          .limit(20);
+      final headers = await _headers();
+      final res = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/notificaciones?id_usuario=$idUsuario'),
+        headers: headers,
+      );
 
-      return List<Map<String, dynamic>>.from(response);
+      if (res.statusCode != 200) return [];
+      return List<Map<String, dynamic>>.from(jsonDecode(res.body));
     } catch (e) {
       return [];
     }
   }
 
-  /// GET: Obtener solicitudes pendientes (solo admin)
+  /// GET: solicitudes pendientes (solo admin)
   static Future<List<Map<String, dynamic>>> getSolicitudes() async {
     try {
-      final response = await _supabase
-          .from('solicitudes')
-          .select('*, usuarios(nombre, apellido)')
-          .eq('tipo_solicitud', 'artista')
-          .eq('estado_solicitud', 'Pendiente')
-          .order('fecha_solicitud', ascending: false);
+      final headers = await _headers();
+      final res = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/notificaciones/solicitudes'),
+        headers: headers,
+      );
 
-      return List<Map<String, dynamic>>.from(response);
+      if (res.statusCode != 200) return [];
+      return List<Map<String, dynamic>>.from(jsonDecode(res.body));
     } catch (e) {
       return [];
     }
   }
 
-  /// POST: Crear una nueva notificación en formato UTC
-  static Future<bool> crearNotificacion({
-    required int idUsuario,
-    required String asunto,
-    required String tipoNotificacion,
-  }) async {
-    try {
-      await _supabase.from('notificaciones').insert({
-        'id_usuario': idUsuario,
-        'asunto': asunto,
-        'tipo_notificacion': tipoNotificacion,
-        'fecha_notificacion': DateTime.now().toUtc().toIso8601String(),
-      });
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  /// PATCH: Aprobar solicitud + cambiar rol + notificar usuario
+  /// PATCH: aprobar solicitud
   static Future<bool> aprobarSolicitud(int idSolicitud) async {
     try {
-      final sol = await _supabase
-          .from('solicitudes')
-          .select('id_usuario')
-          .eq('id_solicitud', idSolicitud)
-          .single();
+      final usuario = await SessionService.getUsuario();
+      final idUsuario = usuario?['id_usuario'];
+      final headers = await _headers();
 
-      final idUsuario = sol['id_usuario'] as int;
+      final res = await http.patch(
+        Uri.parse(
+            '${ApiConfig.baseUrl}/notificaciones/solicitudes/$idSolicitud/aprobar'),
+        headers: headers,
+        body: jsonEncode({'id_usuario': idUsuario}),
+      );
 
-      await _supabase
-          .from('solicitudes')
-          .update({'estado_solicitud': 'Aceptada'})
-          .eq('id_solicitud', idSolicitud);
-
-      await _supabase
-          .from('usuarios')
-          .update({'id_rol': 2})
-          .eq('id_usuario', idUsuario);
-
-      await _supabase.from('notificaciones').insert({
-        'id_usuario': idUsuario,
-        'asunto': '¡Tu solicitud para ser artista fue aprobada!',
-        'tipo_notificacion': 'solicitud_aprobada',
-        'fecha_notificacion': DateTime.now().toUtc().toIso8601String(),
-      });
-
-      return true;
+      return res.statusCode == 200;
     } catch (e) {
       return false;
     }
   }
 
-  /// PATCH: Rechazar solicitud + notificar usuario
+  /// PATCH: rechazar solicitud
   static Future<bool> rechazarSolicitud(int idSolicitud) async {
     try {
-      final sol = await _supabase
-          .from('solicitudes')
-          .select('id_usuario')
-          .eq('id_solicitud', idSolicitud)
-          .single();
+      final usuario = await SessionService.getUsuario();
+      final idUsuario = usuario?['id_usuario'];
+      final headers = await _headers();
 
-      final idUsuario = sol['id_usuario'] as int;
+      final res = await http.patch(
+        Uri.parse(
+            '${ApiConfig.baseUrl}/notificaciones/solicitudes/$idSolicitud/rechazar'),
+        headers: headers,
+        body: jsonEncode({'id_usuario': idUsuario}),
+      );
 
-      await _supabase
-          .from('solicitudes')
-          .update({'estado_solicitud': 'Rechazada'})
-          .eq('id_solicitud', idSolicitud);
-
-      await _supabase.from('notificaciones').insert({
-        'id_usuario': idUsuario,
-        'asunto': 'Tu solicitud para ser artista no fue aprobada.',
-        'tipo_notificacion': 'solicitud_rechazada',
-        'fecha_notificacion': DateTime.now().toUtc().toIso8601String(),
-      });
-
-      return true;
+      return res.statusCode == 200;
     } catch (e) {
       return false;
     }

@@ -1,8 +1,6 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../services/session_service.dart';
+import '../../services/admin/publicaciones_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../widgets/gradient_header.dart';
 
@@ -18,6 +16,7 @@ class _GestionPublicacionesScreenState extends State<GestionPublicacionesScreen>
   bool _isLoading = true;
 
   final _buscarController = TextEditingController();
+  final PublicacionesService _publicacionesService = PublicacionesService();
 
   @override
   void initState() {
@@ -31,32 +30,19 @@ class _GestionPublicacionesScreenState extends State<GestionPublicacionesScreen>
       final String? token = await SessionService.getToken();
       if (token == null) throw Exception('No hay sesión activa');
 
-      final String baseUrl = dotenv.env['SUPABASE_URL']!;
-
-      Uri url = Uri.parse('$baseUrl/functions/v1/gestion_publicaciones');
-      Map<String, String> queryParams = {};
-      
-      if (_buscarController.text.isNotEmpty) queryParams['buscar'] = _buscarController.text;
-
-      if (queryParams.isNotEmpty) {
-        url = url.replace(queryParameters: queryParams);
-      }
-
-      final response = await http.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+      final data = await _publicacionesService.getPublicaciones(
+        token,
+        buscar: _buscarController.text,
       );
-
-      final data = jsonDecode(response.body);
-
-      if (response.statusCode != 200) throw Exception(data['error'] ?? 'Error desconocido');
 
       setState(() => _publicaciones = data);
     } catch (e) {
       debugPrint("Error GET Publicaciones: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al cargar: $e'), backgroundColor: Colors.red),
+        );
+      }
     } finally {
       setState(() => _isLoading = false);
     }
@@ -86,25 +72,19 @@ class _GestionPublicacionesScreenState extends State<GestionPublicacionesScreen>
 
     try {
       final String? token = await SessionService.getToken();
-      final String baseUrl = dotenv.env['SUPABASE_URL']!;
-      
-      final response = await http.delete(
-        Uri.parse('$baseUrl/functions/v1/gestion_publicaciones?id_publicacion=$idPublicacion'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+      if (token == null) throw Exception('No hay sesión activa');
+
+      await _publicacionesService.eliminarPublicacion(
+        token: token,
+        idPublicacion: idPublicacion,
       );
 
-      if (response.statusCode == 200) {
-        _cargarPublicaciones();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Publicación eliminada correctamente'), backgroundColor: Colors.green),
-          );
-        }
-      } else {
-        throw Exception(jsonDecode(response.body)['error']);
+      _cargarPublicaciones();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Publicación eliminada correctamente'), backgroundColor: Colors.green),
+        );
       }
     } catch (e) {
       debugPrint("Error DELETE: $e");
@@ -189,7 +169,7 @@ class _GestionPublicacionesScreenState extends State<GestionPublicacionesScreen>
                           children: [
                             ListTile(
                               leading: CircleAvatar(
-                                backgroundColor: AppTheme.primaryCyan.withOpacity(0.2),
+                                backgroundColor: AppTheme.primaryCyan.withValues(alpha: 0.2),
                                 child: const Icon(Icons.person, color: AppTheme.primaryCyan),
                               ),
                               title: Text(usuario['nombre'] ?? 'Desconocido', style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -239,7 +219,7 @@ class _GestionPublicacionesScreenState extends State<GestionPublicacionesScreen>
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: AppTheme.primaryCyan.withOpacity(0.1),
+                                        color: AppTheme.primaryCyan.withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(10),
                                       ),
                                       child: Text(

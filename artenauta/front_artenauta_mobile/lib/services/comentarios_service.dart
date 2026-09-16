@@ -15,7 +15,7 @@ class ComentariosService {
 
   // 1. GET: Obtener comentarios de una publicación
   Future<List<Map<String, dynamic>>> obtenerComentarios(int idPublicacion) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/comentarios/publicacion/$idPublicacion');
+    final url = Uri.parse('${ApiConfig.baseUrl}/comentarios/$idPublicacion');
 
     try {
       final headers = await _getAuthHeaders();
@@ -73,9 +73,38 @@ class ComentariosService {
         );
       }
 
+      // ← NUEVO: notificar al artista
+      await _notificarComentario(
+        idPublicacion: idPublicacion,
+        idUsuario: idUsuario,
+        nombreUsuario: usuario?['nombre'] ?? 'Alguien',
+      );
+
       return decodedResponse;
     } catch (e) {
       throw Exception('Error al crear comentario: $e');
+    }
+  }
+
+  // ← NUEVO: envía notificación al backend
+  Future<void> _notificarComentario({
+    required int idPublicacion,
+    required int idUsuario,
+    required String nombreUsuario,
+  }) async {
+    try {
+      final headers = await _getAuthHeaders();
+      await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/notificaciones/comentario'),
+        headers: headers,
+        body: jsonEncode({
+          'id_publicacion': idPublicacion,
+          'id_usuario': idUsuario,
+          'nombre_usuario': nombreUsuario,
+        }),
+      );
+    } catch (e) {
+      // No interrumpe el flujo si la notificación falla
     }
   }
 
