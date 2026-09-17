@@ -3,23 +3,23 @@ import '../core/theme/app_theme.dart';
 import '../services/session_service.dart';
 import '../services/publicaciones_service.dart';
 import '../services/notificaciones_service.dart';
+import '../widgets/publicaciones/publicacion_card.dart';
+import '../widgets/notificaciones/notificaciones_panel.dart';
 import '../widgets/app_header.dart';
 import '../widgets/app_menu.dart';
-import '../widgets/notificaciones/notificaciones_panel.dart';
-import '../widgets/publicaciones/publicacion_card.dart';
 import '../screens/login_screen.dart';
 
-class UsuarioScreen extends StatefulWidget {
-  const UsuarioScreen({super.key});
+class TestUsuarioScreen extends StatefulWidget {
+  const TestUsuarioScreen({super.key});
 
   @override
-  State<UsuarioScreen> createState() => _UsuarioScreenState();
+  State<TestUsuarioScreen> createState() => _TestUsuarioScreenState();
 }
 
-class _UsuarioScreenState extends State<UsuarioScreen> {
+class _TestUsuarioScreenState extends State<TestUsuarioScreen> {
   final PublicacionesService _publicacionesService = PublicacionesService();
-
   Map<String, dynamic>? _usuario;
+  List<Map<String, dynamic>> _publicaciones = [];
   int _notifCount = 0;
   bool _cargando = true;
 
@@ -32,19 +32,14 @@ class _UsuarioScreenState extends State<UsuarioScreen> {
   Future<void> _cargarDatos() async {
     try {
       final usuario = await SessionService.getUsuario();
-      int count = 0;
-
-      try {
-        count = await NotificacionesService.contarNuevas();
-      } catch (e) {
-        debugPrint('Error al obtener notificaciones: $e');
-      }
+      final count = await NotificacionesService.contarNuevas();
+      final publicaciones = await _publicacionesService.obtenerPublicaciones();
 
       if (!mounted) return;
-
       setState(() {
         _usuario = usuario;
         _notifCount = count;
+        _publicaciones = publicaciones;
         _cargando = false;
       });
     } catch (e) {
@@ -102,95 +97,62 @@ class _UsuarioScreenState extends State<UsuarioScreen> {
         child: RefreshIndicator(
           color: AppTheme.primaryCyan,
           onRefresh: () async {
-            setState(() {});
             await _cargarDatos();
           },
           child: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
-              // Encabezado modular
+              // Encabezado con el buscador activo
               SliverToBoxAdapter(
                 child: AppHeader(
                   inicial: inicial,
                   notifCount: _notifCount,
                   onNotificacionesPressed: _abrirNotificaciones,
                   onAvatarPressed: () => _mostrarMenuOpciones(idRol),
+                  publicaciones: _publicaciones,
                 ),
               ),
-
-              // Banner de bienvenida
               SliverToBoxAdapter(
-                child: _HeaderBienvenidaSection(nombre: nombre),
+                child: _HeaderUsuarioSection(nombre: nombre),
               ),
-
-              // Listado de publicaciones desde el Backend
-              FutureBuilder<List<Map<String, dynamic>>>(
-                future: _publicacionesService.obtenerPublicaciones(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting || _cargando) {
-                    return const SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Center(
-                        child: CircularProgressIndicator(color: AppTheme.primaryCyan),
-                      ),
-                    );
-                  }
-
-                  if (snapshot.hasError) {
-                    return SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Text(
-                            'Error al cargar publicaciones:\n${snapshot.error}',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.redAccent, height: 1.4),
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-
-                  final publicaciones = snapshot.data ?? [];
-                  if (publicaciones.isEmpty) {
-                    return const SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Center(
-                        child: Text(
-                          'No hay publicaciones disponibles por el momento.',
-                          style: TextStyle(color: AppTheme.textSecondary, fontSize: 15),
-                        ),
-                      ),
-                    );
-                  }
-
-                  return SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: PublicacionCard(
-                              publicacion: publicaciones[index],
-                            ),
-                          );
-                        },
-                        childCount: publicaciones.length,
-                      ),
+              if (_cargando)
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: CircularProgressIndicator(color: AppTheme.primaryCyan),
+                  ),
+                )
+              else if (_publicaciones.isEmpty)
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Text(
+                      'No hay publicaciones disponibles en este momento.',
+                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 15),
                     ),
-                  );
-                },
-              ),
-
-              // Pie de página
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: PublicacionCard(publicacion: _publicaciones[index]),
+                        );
+                      },
+                      childCount: _publicaciones.length,
+                    ),
+                  ),
+                ),
               const SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.symmetric(vertical: 24),
                   child: Center(
                     child: Text(
-                      '© 2026 ArteNauta • Todos los derechos reservados',
+                      '© 2026 ArteNauta • Comunidad de Arte',
                       style: TextStyle(
                         color: AppTheme.textSecondary,
                         fontSize: 12,
@@ -208,10 +170,10 @@ class _UsuarioScreenState extends State<UsuarioScreen> {
   }
 }
 
-class _HeaderBienvenidaSection extends StatelessWidget {
+class _HeaderUsuarioSection extends StatelessWidget {
   final String nombre;
 
-  const _HeaderBienvenidaSection({required this.nombre});
+  const _HeaderUsuarioSection({required this.nombre});
 
   @override
   Widget build(BuildContext context) {
@@ -220,13 +182,19 @@ class _HeaderBienvenidaSection extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 4, 16, 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.primaryCyan,
+            AppTheme.primaryCyan.withValues(alpha: 0.82),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
+            color: AppTheme.primaryCyan.withValues(alpha: 0.25),
+            blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
@@ -239,15 +207,16 @@ class _HeaderBienvenidaSection extends StatelessWidget {
             style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: AppTheme.primaryCyan,
+              color: Colors.white,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           const Text(
-            'Explora y descubre el talento emergente en ArteNauta',
+            'Explora el talento de nuestra comunidad y apoya a tus artistas favoritos.',
             style: TextStyle(
-              color: AppTheme.textSecondary,
-              fontSize: 14,
+              color: Colors.white,
+              fontSize: 13,
+              height: 1.3,
             ),
           ),
         ],

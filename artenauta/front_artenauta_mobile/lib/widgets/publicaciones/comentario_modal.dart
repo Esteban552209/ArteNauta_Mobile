@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../services/session_service.dart';
 import '../../services/comentarios_service.dart';
-//import 'comentario_item.dart';
+import 'package:art_sweetalert_new/art_sweetalert_new.dart';
+import 'comentario_item.dart';
 import 'comentario_input.dart';
 
 class ComentariosModal extends StatefulWidget {
@@ -78,6 +79,8 @@ class _ComentariosModalState extends State<ComentariosModal> {
   }
 
   Future<void> _publicarComentario(String contenido) async {
+
+    
     if (_idUsuario == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -90,8 +93,15 @@ class _ComentariosModalState extends State<ComentariosModal> {
 
     if (_enviando || contenido.trim().isEmpty) return;
 
-    setState(() {
-      _enviando = true;
+    setState(() { _enviando = true;    
+      
+      ArtSweetAlert.show(
+        context: context,
+        type: ArtAlertType.success,
+        title: const Text('¡Comentario Publicado!'),
+        content: const Text('El comentario se subio con exito.'),
+      );
+
     });
 
     try {
@@ -100,7 +110,6 @@ class _ComentariosModalState extends State<ComentariosModal> {
         contenido: contenido.trim(),
       );
 
-      // Recargar comentarios tras publicar
       await _cargarComentarios();
     } catch (e) {
       if (!mounted) return;
@@ -208,33 +217,30 @@ class _ComentariosModalState extends State<ComentariosModal> {
                         ),
                       )
                     : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _comentarios.length,
-                        itemBuilder: (context, index) {
-                          final comentario = _comentarios[index];
-                          final idComentario = comentario['id_comentario'];
-                          final idAutor = comentario['id_usuario_final'] ??
-                              comentario['id_usuario'];
-                          return null;
+                            padding: const EdgeInsets.all(16),
+                            itemCount: _comentarios.length,
+                            itemBuilder: (context, index) {
+                              final comentario = _comentarios[index];
+                              final idComentario = comentario['id_comentario'];
+                              final idAutor = comentario['id_usuario_final'] ?? comentario['id_usuario'];
 
-                          // return ComentarioItem(
-                          //   comentario: comentario,
-                          //   esPropietario:
-                          //       _idUsuario != null && _idUsuario == idAutor,
-                          //   onEliminar: idComentario != null
-                          //       ? () => _eliminarComentario(idComentario)
-                          //       : null,
-                          // );
-                        },
-                      ),
-          ),
+                              return ComentarioItem(
+                                comentario: comentario,
+                                esPropietario: _idUsuario != null && _idUsuario == idAutor,
+                                onEliminar: idComentario != null
+                                    ? () => _eliminarComentario(idComentario)
+                                    : null,
+                              );
+                            },
+                          ),
+                        ),
 
-          ComentarioInput(
-            cargando: _enviando,
-            onEnviar: _publicarComentario,
-          ),
-        ],
-      ),
-    );
-  }
-}
+                        ComentarioInput(
+                          cargando: _enviando,
+                          onEnviar: _publicarComentario,
+                        ),
+                      ],
+                    ),
+                  );
+                }
+              }

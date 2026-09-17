@@ -20,6 +20,7 @@ class TestArtistaScreen extends StatefulWidget {
 class _TestArtistaScreenState extends State<TestArtistaScreen> {
   final PublicacionesService _publicacionesService = PublicacionesService();
   Map<String, dynamic>? _usuario;
+  List<Map<String, dynamic>> _publicaciones = [];
   int _notifCount = 0;
   bool _cargando = true;
 
@@ -33,11 +34,13 @@ class _TestArtistaScreenState extends State<TestArtistaScreen> {
     try {
       final usuario = await SessionService.getUsuario();
       final count = await NotificacionesService.contarNuevas();
+      final publicaciones = await _publicacionesService.obtenerPublicaciones();
 
       if (!mounted) return;
       setState(() {
         _usuario = usuario;
         _notifCount = count;
+        _publicaciones = publicaciones;
         _cargando = false;
       });
     } catch (e) {
@@ -136,6 +139,7 @@ class _TestArtistaScreenState extends State<TestArtistaScreen> {
                   notifCount: _notifCount,
                   onNotificacionesPressed: _abrirNotificaciones,
                   onAvatarPressed: () => _mostrarMenuOpciones(idRol),
+                  publicaciones: _publicaciones,
                 ),
               ),
 

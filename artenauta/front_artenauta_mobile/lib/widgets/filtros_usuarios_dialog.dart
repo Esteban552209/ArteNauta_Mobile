@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_theme.dart'; // Ajusta la ruta a tu app_theme
+import '../../core/theme/app_theme.dart';
 
 class FiltrosUsuariosDialog extends StatefulWidget {
   final String? estadoActual;

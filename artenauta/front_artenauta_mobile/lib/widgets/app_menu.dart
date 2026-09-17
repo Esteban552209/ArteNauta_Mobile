@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../screens/perfil_screen.dart';
 import '../screens/conversaciones_screen.dart';
+import 'package:art_sweetalert_new/art_sweetalert_new.dart';
 
 class AppMenu extends StatelessWidget {
   final int idRol;
@@ -132,9 +133,33 @@ class AppMenu extends StatelessWidget {
                 'Cerrar Sesión',
                 style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600),
               ),
-              onTap: () {
-                Navigator.pop(context);
-                onCerrarSesion();
+              onTap: () {    
+
+                ArtSweetAlert.show(
+                  context: context,
+                    type: ArtAlertType.warning,
+                    title: const Text('¿Desea cerrar su sesion?'),
+                    actions: [
+                      ArtAlertButton(
+                        onPressed: () => Navigator.pop(context,true,),
+                        backgroundColor: AppTheme.primaryCyan,
+                        textColor: Colors.white,
+                        child: const Text('Si'),
+                      ),
+                      ArtAlertButton(
+                        onPressed: () => Navigator.pop(context,false,),
+                        backgroundColor: AppTheme.primaryCyan,
+                        textColor: Colors.white,
+                        child: const Text('No'),
+                      )
+                    ],
+                ).then((result) {
+                  if (result == true) {
+                    if (onCerrarSesion != null) {
+                      onCerrarSesion!();
+                    }
+                  }
+                });
               },
             ),
           ],

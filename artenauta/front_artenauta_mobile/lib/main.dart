@@ -54,7 +54,7 @@ class _SplashRouterState extends State<SplashRouter> {
       } else if (rol == 2) {
         pantallaDestino = const TestArtistaScreen(); 
       } else if (rol == 1) {
-        pantallaDestino = const UsuarioScreen(); 
+        pantallaDestino = const TestUsuarioScreen(); 
       } else {
         pantallaDestino = const LoginScreen(); 
       }

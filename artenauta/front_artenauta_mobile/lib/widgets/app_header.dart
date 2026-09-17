@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
+import '../widgets/publicaciones/publicacion_search_delegate.dart';
 
 class AppHeader extends StatelessWidget {
   final String inicial;
   final int notifCount;
+  final List<dynamic> publicaciones;
   final VoidCallback onNotificacionesPressed;
   final VoidCallback onAvatarPressed;
 
@@ -11,6 +13,7 @@ class AppHeader extends StatelessWidget {
     super.key,
     required this.inicial,
     required this.notifCount,
+    this.publicaciones = const [],
     required this.onNotificacionesPressed,
     required this.onAvatarPressed,
   });
@@ -34,13 +37,34 @@ class AppHeader extends StatelessWidget {
           ),
           Row(
             children: [
+              IconButton(
+                icon: const Icon(
+                  Icons.search,
+                  color: Colors.black87,
+                  size: 32,
+                ),
+                tooltip: 'Buscar publicaciones',
+                onPressed: () {
+                  final listaMapeada = publicaciones
+                      .map((e) => e as Map<String, dynamic>)
+                      .toList();
+
+                  showSearch(
+                    context: context,
+                    delegate: PublicacionSearchDelegate(
+                      publicaciones: listaMapeada,
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 4),
               Stack(
                 children: [
                   IconButton(
                     icon: const Icon(
                       Icons.notifications_none_rounded,
                       color: Colors.black87,
-                      size: 40,
+                      size: 36,
                     ),
                     onPressed: onNotificacionesPressed,
                   ),
@@ -66,7 +90,7 @@ class AppHeader extends StatelessWidget {
                     ),
                 ],
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 8),
               GestureDetector(
                 onTap: onAvatarPressed,
                 child: CircleAvatar(
@@ -77,7 +101,7 @@ class AppHeader extends StatelessWidget {
                     style: const TextStyle(
                       color: AppTheme.primaryCyan,
                       fontWeight: FontWeight.bold,
-                      fontSize: 30,
+                      fontSize: 22,
                     ),
                   ),
                 ),

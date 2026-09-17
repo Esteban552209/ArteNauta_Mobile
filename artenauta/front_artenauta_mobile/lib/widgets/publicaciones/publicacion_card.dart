@@ -17,145 +17,132 @@ class PublicacionCard extends StatelessWidget {
       publicacion['id_publicacion']?.toString() ?? '',
     );
 
-    final titulo =
-        publicacion['titulo'] ?? 'Sin título';
-
-    final descripcion =
-        publicacion['descripcion'] ??
-        publicacion['contenido'] ??
-        '';
-
-    final contenido =
-        publicacion['contenido'];
-
-    final idCategoria =
-        publicacion['id_categoria'] ?? 'General';
+    final titulo = publicacion['titulo'] ?? 'Sin título';
+    final descripcion = publicacion['descripcion'] ??publicacion['contenido'] ??'';
+    final contenido = publicacion['contenido'];
+    final usuario = publicacion['usuarios'] ?? publicacion['usuario'] ?? {};
+    final nombreArtista = usuario['nombre'] != null? '${usuario['nombre']} ${usuario['apellido'] ?? ''}'.trim(): 'Artista desconocido';
+    final fotoPerfil = usuario['foto_perfil'];
+    final categoria = publicacion['categorias'] ?? publicacion['categoria'] ?? {};
+    final nombreCategoria = categoria['nombre_categoria'] ??publicacion['nombre_categoria'] ??publicacion['id_categoria']?.toString() ??
+        'General';
 
     return Card(
       elevation: 3,
-
-      margin:
-          const EdgeInsets.only(bottom: 16),
-
-      shape:
-          RoundedRectangleBorder(
-        borderRadius:
-            BorderRadius.circular(16),
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
       ),
-
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
 
           ListTile(
-            leading:
-                const CircleAvatar(
-              backgroundColor:
-                  AppTheme.primaryCyan,
-
-              child: Icon(
-                Icons.palette,
-                color: Colors.white,
-              ),
+            leading: CircleAvatar(
+              backgroundColor: AppTheme.primaryCyan,
+              backgroundImage: fotoPerfil != null && fotoPerfil.toString().isNotEmpty
+                  ? NetworkImage(fotoPerfil.toString())
+                  : null,
+              child: fotoPerfil == null || fotoPerfil.toString().isEmpty
+                  ? const Icon(
+                      Icons.palette,
+                      color: Colors.white,
+                    )
+                  : null,
             ),
-
             title: Text(
-              titulo.toString(),
-              style:
-                  const TextStyle(
-                fontWeight:
-                    FontWeight.bold,
-                fontSize: 16,
+              nombreArtista,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
               ),
             ),
-
             subtitle: Text(
-              'Categoría ID: $idCategoria',
-              style:
-                  const TextStyle(
-                fontSize: 12,
+              titulo.toString(),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
               ),
             ),
           ),
 
           if (contenido != null &&
-              contenido
-                  .toString()
-                  .startsWith('http'))
+              contenido.toString().startsWith('http'))
             Image.network(
               contenido.toString(),
               height: 300,
               width: double.infinity,
               fit: BoxFit.cover,
-
-              errorBuilder:
-                  (_, _, _) {
+              errorBuilder: (_, _, _) {
                 return const SizedBox.shrink();
               },
             ),
 
           Padding(
-            padding:
-                const EdgeInsets.all(12),
-            child: Text(
-              descripcion.toString(),
-              style:
-                  const TextStyle(
-                fontSize: 14,
-                color: Colors.black87,
-              ),
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (descripcion.toString().isNotEmpty) ...[
+                  Text(
+                    descripcion.toString(),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryCyan.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+              ],
             ),
           ),
 
           const Divider(height: 1),
 
           Padding(
-            padding:
-                const EdgeInsets.symmetric(
+            padding: const EdgeInsets.symmetric(
               horizontal: 8,
               vertical: 4,
             ),
-
             child: Row(
-              mainAxisAlignment:
-                  MainAxisAlignment.spaceAround,
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-
                 LikeButton(
-                  idPublicacion:
-                      idPublicacion,
+                  idPublicacion: idPublicacion,
                 ),
-
                 TextButton.icon(
-                  onPressed:
-                      idPublicacion == null
-                          ? null
-                          : () {
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled:
-                                    true,
-                                useSafeArea: true,
-                                backgroundColor:
-                                    Colors.transparent,
-                                builder: (_) {
-                                  return ComentariosModal(
-                                    idPublicacion:
-                                        idPublicacion,
-                                    titulo:
-                                        titulo.toString(),
-                                  );
-                                },
+                  onPressed: idPublicacion == null
+                      ? null
+                      : () {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            useSafeArea: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (_) {
+                              return ComentariosModal(
+                                idPublicacion: idPublicacion,
+                                titulo: titulo.toString(),
                               );
                             },
-
+                          );
+                        },
                   icon: const Icon(
                     Icons.chat_bubble_outline,
-                    color:
-                        AppTheme.primaryCyan,
+                    color: AppTheme.primaryCyan,
                   ),
-
                   label: const Text(
                     'Comentar',
                     style: TextStyle(
