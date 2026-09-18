@@ -5,9 +5,12 @@ import 'screens/admin/admin_users_screen.dart';
 import 'screens/artista_screen.dart'; 
 import 'screens/usuario_screen.dart'; 
 import 'services/session_service.dart';
+import 'services/api_config.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await ApiConfig.detectarBaseUrlActiva();
 
   runApp(const ArtenautaApp());
 }

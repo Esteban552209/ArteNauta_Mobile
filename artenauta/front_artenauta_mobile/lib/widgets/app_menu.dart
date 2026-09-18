@@ -138,7 +138,7 @@ class AppMenu extends StatelessWidget {
                 ArtSweetAlert.show(
                   context: context,
                     type: ArtAlertType.warning,
-                    title: const Text('¿Desea cerrar su sesion?'),
+                    title: const Text('¿Cerrar Sesion?'),
                     actions: [
                       ArtAlertButton(
                         onPressed: () => Navigator.pop(context,true,),

@@ -87,7 +87,10 @@ class _LoginScreenState extends State<LoginScreen> {
         type: ArtAlertType.success,
         title: const Text('Bienvenido'),
         content: const Text('La sesión se inició correctamente.'),
+        
       );
+
+
     } catch (e) {
       if (!mounted) return;
 

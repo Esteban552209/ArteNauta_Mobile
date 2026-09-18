@@ -41,7 +41,7 @@ router.post("/auth/login", async (req, res) => {
         };
 
         const secretKey = process.env.JWT_SECRET || "mi_clave_super_secreta_desarrollo";
-        const token = jwt.sign(payload, secretKey, { expiresIn: "5h" });
+        const token = jwt.sign(payload, secretKey, { expiresIn: "365d" });
 
         res.status(200).json({
             mensaje: "Inicio de sesión exitoso",
