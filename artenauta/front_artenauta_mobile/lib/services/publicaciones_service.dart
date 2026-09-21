@@ -144,8 +144,7 @@ class PublicacionesService {
         headers: headers,
         body: jsonEncode({
           'titulo': titulo,
-          'descripcion': descripcion,
-          'precio': ?precio,
+          'descripcion': descripcion
         }),
       );
 

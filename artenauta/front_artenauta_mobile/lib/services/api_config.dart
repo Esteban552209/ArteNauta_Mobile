@@ -4,8 +4,8 @@ import 'session_service.dart';
 class ApiConfig {
   static const List<String> _posiblesIPs = [
     'http://10.1.202.228:3000/mobile',
-    // 'http://192.168.1.50:3000/mobile',
-    // 'http://192.168.0.12:3000/mobile',
+    'http://192.168.1.90:3000/mobile',
+    'http://192.168.0.12:3000/mobile',
     // 'http://10.0.2.2:3000/mobile',
     // 'http://localhost:3000/mobile',
   ];
