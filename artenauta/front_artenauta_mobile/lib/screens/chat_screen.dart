@@ -3,6 +3,9 @@ import '../core/theme/app_theme.dart';
 import '../models/mensaje_model.dart';
 import '../services/conversaciones_service.dart';
 import '../widgets/gradient_header.dart';
+import '../widgets/conversaciones/chat_bubble.dart';
+import '../widgets/conversaciones/date_separator.dart';
+import '../widgets/conversaciones/mensaje_opciones_sheet.dart';
 
 class ChatScreen extends StatefulWidget {
   final int idConversacion;
@@ -32,7 +35,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _cargarMensajes();
   }
 
-    Future<void> _cargarMensajes() async {
+  Future<void> _cargarMensajes() async {
     final lista = await ConversacionesService.getMensajes(widget.idConversacion, widget.miId);
     setState(() {
       _mensajes = lista;
@@ -40,9 +43,9 @@ class _ChatScreenState extends State<ChatScreen> {
     });
     WidgetsBinding.instance.addPostFrameCallback((_) => _irAlFinal());
 
-    // Marca como leídos los mensajes del otro que aún no lo estaban
     await ConversacionesService.marcarComoLeidos(widget.idConversacion, widget.miId);
   }
+
   void _irAlFinal() {
     if (_scrollController.hasClients) {
       _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
@@ -59,6 +62,23 @@ class _ChatScreenState extends State<ChatScreen> {
       contenido: texto,
     );
     await _cargarMensajes();
+  }
+
+  bool _mismoDia(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
+  Future<void> _mostrarOpcionesMensaje(MensajeModel m) async {
+    if (m.eliminadoTodos) return;
+    final esMio = m.idUsuario == widget.miId;
+    final opcion = await mostrarOpcionesMensaje(context, esMio: esMio);
+
+    if (opcion == 'mi') {
+      await ConversacionesService.eliminarMensajeParaMi(m.idMensaje, widget.miId);
+      _cargarMensajes();
+    } else if (opcion == 'todos') {
+      await ConversacionesService.eliminarMensajeParaTodos(m.idMensaje);
+      _cargarMensajes();
+    }
   }
 
   @override
@@ -104,24 +124,23 @@ class _ChatScreenState extends State<ChatScreen> {
                       itemBuilder: (_, i) {
                         final m = _mensajes[i];
                         final esMio = m.idUsuario == widget.miId;
-                        return Align(
-                          alignment:
-                              esMio ? Alignment.centerRight : Alignment.centerLeft,
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(vertical: 4),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: esMio ? AppTheme.primaryCyan : Colors.grey[200],
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Text(
-                              m.contenido,
-                              style: TextStyle(
-                                color: esMio ? Colors.white : Colors.black87,
-                              ),
-                            ),
-                          ),
+
+                        final mostrarSeparador =
+                            i == 0 || !_mismoDia(_mensajes[i - 1].fechaEnvio, m.fechaEnvio);
+
+                        final burbuja = ChatBubble(
+                          mensaje: m,
+                          esMio: esMio,
+                          onLongPress: () => _mostrarOpcionesMensaje(m),
+                        );
+
+                        if (!mostrarSeparador) return burbuja;
+
+                        return Column(
+                          children: [
+                            DateSeparator(fecha: m.fechaEnvio),
+                            burbuja,
+                          ],
                         );
                       },
                     ),

@@ -19,7 +19,8 @@ class MensajeModel {
     return MensajeModel(
       idMensaje: json['id_mensaje'] as int,
       contenido: json['contenido'] ?? '',
-      fechaEnvio: DateTime.parse(json['fecha_envio']),
+      // El backend guarda en UTC; .toLocal() hora real del dispositivo
+      fechaEnvio: DateTime.parse(json['fecha_envio']).toLocal(),
       idUsuario: json['id_usuario'] as int,
       leido: json['leido'] as bool? ?? false,
       eliminadoTodos: json['eliminado_todos'] as bool? ?? false,

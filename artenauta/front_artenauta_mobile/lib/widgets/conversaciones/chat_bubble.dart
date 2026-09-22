@@ -14,6 +14,12 @@ class ChatBubble extends StatelessWidget {
     required this.onLongPress,
   });
 
+  String _hora(DateTime fecha) {
+    final h = fecha.hour.toString().padLeft(2, '0');
+    final m = fecha.minute.toString().padLeft(2, '0');
+    return '$h:$m';
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -22,7 +28,10 @@ class ChatBubble extends StatelessWidget {
         alignment: esMio ? Alignment.centerRight : Alignment.centerLeft,
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 4),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.75,
+          ),
           decoration: BoxDecoration(
             color: mensaje.eliminadoTodos
                 ? Colors.grey[300]
@@ -45,9 +54,23 @@ class ChatBubble extends StatelessWidget {
                     ),
                   ],
                 )
-              : Text(
-                  mensaje.contenido,
-                  style: TextStyle(color: esMio ? Colors.white : Colors.black87),
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      mensaje.contenido,
+                      style: TextStyle(color: esMio ? Colors.white : Colors.black87),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _hora(mensaje.fechaEnvio),
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: esMio ? Colors.white70 : Colors.black45,
+                      ),
+                    ),
+                  ],
                 ),
         ),
       ),
